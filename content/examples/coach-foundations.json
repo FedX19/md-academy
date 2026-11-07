@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "slug": "coach-foundations-preview",
+  "title": "Coach Foundations — Example",
+  "summary": "Sample curriculum metadata for Grok course authoring. Not an approved or published MDC training course.",
+  "status": "draft",
+  "audience": "mdc-coach",
+  "modules": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "lessons": [
+        {
+          "id": "welcome",
+          "title": "Welcome to MD Academy",
+          "summary": "Preview of the course goals and navigation.",
+          "type": "video",
+          "estimatedMinutes": 4
+        },
+        {
+          "id": "coaching_objectives",
+          "title": "Coaching Objectives",
+          "summary": "A sample introduction to practice design.",
+          "type": "article",
+          "estimatedMinutes": 5
+        }
+      ]
+    }
+  ]
+}

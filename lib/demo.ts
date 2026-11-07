@@ -1,0 +1,4 @@
+export const previewCourses=[
+{slug:"coach-foundations",title:"MDC Coach Foundations",category:"COACHING",minutes:42,summary:"Learn the philosophy and practice structure of the Modern Day Coach system.",lessons:["Welcome to MD Academy","The Winning Way","Building Better Practices","Teaching and Feedback","Player Development Process","Knowledge Check"]},
+{slug:"practice-design",title:"Better Practice Design",category:"PRACTICE",minutes:36,summary:"Build efficient sessions around objectives, reps, and useful feedback.",lessons:["Define the Objective","Stations and Flow","Review the Reps"]},
+{slug:"communication",title:"Coach Communication",category:"LEADERSHIP",minutes:28,summary:"Set standards, communicate clearly, and earn trust with players and families.",lessons:["Set Expectations","Ask Better Questions"]}] as const;
