@@ -59,3 +59,18 @@ export async function PATCH(request: Request) {
   if (error) return fail("Content could not be updated.", 503);
   return data ? Response.json({ updated: true }, { headers: privateHeaders }) : fail("Content unavailable or locked.", 404);
 }
+
+export async function DELETE(request: Request) {
+  const user = await authenticateAcademy(request);
+  if (!user?.author) return fail("Academy editor access required.", 403);
+  const body = await parseSmallJson(request);
+  if (!body || !isUuid(body.id) || (body.kind !== "module" && body.kind !== "lesson")) {
+    return fail("Invalid curriculum item.", 400);
+  }
+  const table = body.kind === "module" ? "academy_modules" : "academy_lessons";
+  // Row-level security only permits deleting content from draft/review courses.
+  const { data, error } = await user.client.from(table).delete().eq("id", body.id).select("id").maybeSingle();
+  if (error) return fail("Unable to remove curriculum item. Published courses cannot be edited.", 409);
+  return data ? Response.json({ deleted: true }, { headers: privateHeaders })
+    : fail("Item unavailable or course is already published.", 404);
+}

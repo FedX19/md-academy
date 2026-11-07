@@ -2,7 +2,7 @@
 import {useEffect,useRef,useState,Suspense} from "react";
 import {useSearchParams} from "next/navigation";
 import Image from "next/image";
-import {browserAcademyClient} from "@/lib/academy-client";
+import {academyRequest,browserAcademyClient} from "@/lib/academy-client";
 function Finish(){
  const params=useSearchParams();const once=useRef(false);
  const [error,setError]=useState<string|null>(null);
@@ -18,7 +18,8 @@ function Finish(){
     if(!client||!tokenHash)throw Error("Academy sign-in is not configured.");
     const verified=await client.auth.verifyOtp({token_hash:tokenHash,type:"magiclink"});
     if(verified.error||!verified.data.session)throw Error("Your account could not be confirmed.");
-    window.location.replace("/school");
+    const {user}=await academyRequest<{user:{admin:boolean}}>("/api/academy/me");
+    window.location.replace(user.admin?"/admin":"/school");
    }catch(e){setError(e instanceof Error?e.message:"Unable to sign in.");}
   })();
  },[code,state]);
