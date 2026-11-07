@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { BookOpen, PlayCircle, CheckCircle2, ArrowRight, ShieldCheck, GraduationCap, LoaderCircle, LockKeyhole } from "lucide-react";
+import { BookOpen, PlayCircle, CheckCircle2, ArrowRight, ShieldCheck, GraduationCap, LoaderCircle, LockKeyhole, Award } from "lucide-react";
 import { academyRequest, browserAcademyClient } from "@/lib/academy-client";
 
 type Lesson = { id: string; title: string; summary: string; body: string; lesson_type: "video" | "article" | "quiz"; duration_seconds: number; sort_order: number };
@@ -11,6 +11,9 @@ type Module = { id: string; title: string; sort_order: number; academy_lessons: 
 type Course = { id: string; slug: string; title: string; summary: string; status: string; academy_modules: Module[] };
 type Progress = { lesson_id: string; position_seconds: number; completed_at: string | null };
 type Viewer = { name: string; admin: boolean };
+type QuizQuestion = { id: string; prompt: string; choices: string[] };
+type QuizResult = { scorePct: number; passed: boolean; requiredPct: number; questionCount: number };
+type Certificate = { course_id: string; verification_code: string; issued_at: string };
 
 function sortedLessons(course: Course) {
   return (course.academy_modules ?? []).slice().sort((a, b) => a.sort_order - b.sort_order)
@@ -27,6 +30,10 @@ export function SchoolClient() {
   const [loadingVideo, setLoadingVideo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progressBusy, setProgressBusy] = useState(false);
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+  const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
+  const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
   const lastSave = useRef<Record<string, number>>({});
   const loadSeq = useRef(0);
 
@@ -35,14 +42,16 @@ export function SchoolClient() {
     async function load() {
       try {
         const me = await academyRequest<{ user: Viewer }>("/api/academy/me");
-        const [catalog, history] = await Promise.all([
+        const [catalog, history, awards] = await Promise.all([
           academyRequest<{ courses: Course[] }>("/api/academy/courses"),
           academyRequest<{ progress: Progress[] }>("/api/academy/progress"),
+          academyRequest<{ certificates: Certificate[] }>("/api/academy/certificates"),
         ]);
         if (!cancelled) {
           setUser(me.user);
           setCourses(catalog.courses);
           setProgress(history.progress);
+          setCertificates(awards.certificates);
         }
       } catch (cause) {
         if (!cancelled) setError(cause instanceof Error ? cause.message : "Academy is unavailable.");
@@ -59,8 +68,22 @@ export function SchoolClient() {
     setSelected(lesson);
     setError(null);
     setVideo(null);
-    setLoadingVideo(lesson.lesson_type === "video");
-    if (lesson.lesson_type !== "video") return;
+    setQuizQuestions([]);
+    setQuizAnswers({});
+    setQuizResult(null);
+    setLoadingVideo(lesson.lesson_type === "video" || lesson.lesson_type === "quiz");
+    if (lesson.lesson_type === "article") return;
+    if (lesson.lesson_type === "quiz") {
+      try {
+        const quiz = await academyRequest<{ questions: QuizQuestion[] }>("/api/academy/quiz?lessonId=" + encodeURIComponent(lesson.id));
+        if (loadSeq.current === seq) setQuizQuestions(quiz.questions);
+      } catch (cause) {
+        if (loadSeq.current === seq) setError(cause instanceof Error ? cause.message : "Assessment not available.");
+      } finally {
+        if (loadSeq.current === seq) setLoadingVideo(false);
+      }
+      return;
+    }
     try {
       const result = await academyRequest<{ url: string }>("/api/academy/playback", {
         method: "POST",
@@ -98,6 +121,44 @@ export function SchoolClient() {
     }
   }
 
+  async function submitQuiz(lesson: Lesson) {
+    if (progressBusy || quizQuestions.length === 0 || quizQuestions.some(question => quizAnswers[question.id] === undefined)) return;
+    setProgressBusy(true);
+    setError(null);
+    try {
+      const { result } = await academyRequest<{ result: QuizResult }>("/api/academy/quiz", {
+        method: "POST", body: JSON.stringify({ lessonId: lesson.id, answers: quizAnswers }),
+      });
+      setQuizResult(result);
+      if (result.passed) {
+        const history = await academyRequest<{ progress: Progress[] }>("/api/academy/progress");
+        setProgress(history.progress);
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Assessment could not be submitted.");
+    } finally {
+      setProgressBusy(false);
+    }
+  }
+
+  async function issueCertificate(courseId: string) {
+    if (progressBusy) return;
+    setProgressBusy(true);
+    setError(null);
+    try {
+      const { certificate } = await academyRequest<{ certificate: { verificationCode: string; issuedAt: string } }>("/api/academy/certificates", {
+        method: "POST", body: JSON.stringify({ courseId }),
+      });
+      setCertificates(items => items.some(item => item.course_id === courseId)
+        ? items
+        : [...items, { course_id: courseId, verification_code: certificate.verificationCode, issued_at: certificate.issuedAt }]);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Certificate not available.");
+    } finally {
+      setProgressBusy(false);
+    }
+  }
+
   async function signOut() {
     await browserAcademyClient()?.auth.signOut();
     window.location.replace("/");
@@ -118,6 +179,7 @@ export function SchoolClient() {
         <nav>
           <a href="#courses"><BookOpen size={18} /> My Courses</a>
           <a href="#learning"><PlayCircle size={18} /> Continue Learning</a>
+          <a href="#certificates"><Award size={18} /> Certificates</a>
         </nav>
         <p className="sidebar-bottom">Learn it. Apply it. Repeat.</p>
       </aside>
@@ -150,6 +212,8 @@ export function SchoolClient() {
                     <div className="course-copy">
                       <h3>{course.title}</h3><p>{course.summary}</p>
                       <div>{done} / {lessons.length} complete <ArrowRight size={16} /></div>
+                      {course.status === "published" && lessons.length > 0 && done === lessons.length && !certificates.some(cert => cert.course_id === course.id)
+                        ? <button type="button" className="academy-cert-button" disabled={progressBusy} onClick={() => void issueCertificate(course.id)}><Award size={17} /> Claim completion certificate</button> : null}
                       {course.academy_modules?.slice().sort((a, b) => a.sort_order - b.sort_order).map(module =>
                         <section key={module.id}>
                           <h4>{module.title}</h4>
@@ -186,13 +250,48 @@ export function SchoolClient() {
                 onError={() => setError("Playback was interrupted. Reopen this lesson to renew your video link.")}
               /> : null}
               {selected.lesson_type === "article" ? <div className="article-copy">{selected.body || "No reading content has been added yet."}</div> : null}
-              {selected.lesson_type === "quiz" ? <div className="notice"><LockKeyhole size={18} /> Assessments require verified grading and cannot be marked complete from the video player.</div> : null}
+              {selected.lesson_type === "quiz" ? <div className="academy-quiz">
+                {quizQuestions.length === 0 && !loadingVideo && !error ? <p>This assessment has not been authored yet.</p> : null}
+                {quizQuestions.map((question, index) => <fieldset key={question.id} className="academy-question">
+                  <legend>{index + 1}. {question.prompt}</legend>
+                  {question.choices.map((choice, optionIndex) =>
+                    <label key={optionIndex} className="academy-choice">
+                      <input
+                        type="radio" name={"answer-" + question.id}
+                        checked={quizAnswers[question.id] === optionIndex}
+                        disabled={quizResult?.passed || progressBusy}
+                        onChange={() => setQuizAnswers(items => ({ ...items, [question.id]: optionIndex }))}
+                      />
+                      <span>{choice}</span>
+                    </label>)}
+                </fieldset>)}
+                {quizResult ? <div role="status" className="academy-quiz-result">
+                  <strong>{quizResult.passed ? "Assessment passed" : "Keep learning and try again"}</strong>
+                  <p>Score: {quizResult.scorePct}% · Required: {quizResult.requiredPct}%</p>
+                </div> : null}
+                {quizQuestions.length > 0 && !quizResult?.passed ? <button
+                  type="button" className="button" disabled={progressBusy || quizQuestions.some(q => quizAnswers[q.id] === undefined)}
+                  onClick={() => void submitQuiz(selected)}>Submit assessment</button> : null}
+              </div> : null}
               {!video && !loadingVideo && selected.lesson_type === "video" && !error ? <div className="notice">This video has not been uploaded yet.</div> : null}
               <div className="academy-player-actions">
                 {selected.lesson_type === "article" ? <button type="button" className="button" disabled={progressBusy} onClick={() => void saveProgress(selected, 0, true)}>Mark reading complete</button> : null}
                 {nextLesson ? <button type="button" className="button" onClick={() => void openLesson(nextLesson)}>Next lesson <ArrowRight size={16} /></button> : null}
               </div>
             </section> : null}
+            <section id="certificates" className="academy-certificates">
+              <div className="section-title"><h2>My certificates</h2></div>
+              {certificates.length === 0 ? <p>No completion certificates yet. Complete your lessons and required assessments to earn one.</p>
+                : certificates.map(cert => {
+                  const course = courses.find(c => c.id === cert.course_id);
+                  return <div className="academy-award" key={cert.verification_code}>
+                    <Award size={24} />
+                    <div><strong>{course?.title ?? "MD Academy Course"} — Completed</strong>
+                      <small>Issued {new Date(cert.issued_at).toLocaleDateString()} · Code {cert.verification_code}</small>
+                    </div>
+                  </div>;
+                })}
+            </section>
           </> : null}
         </main>
         <footer>MD Academy · Powered by UniteHQ</footer>
