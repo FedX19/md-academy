@@ -1,0 +1,20 @@
+import { authenticateAcademy, privateHeaders } from "@/lib/academy-server";
+import { fail, isUuid, parseSmallJson } from "@/lib/academy-input";
+
+export async function GET(request: Request) {
+  const user = await authenticateAcademy(request);
+  if (!user) return fail("Sign in to see your certificates.", 401);
+  const { data, error } = await user.client.from("academy_certificates")
+    .select("id,course_id,verification_code,issued_at").eq("user_id", user.id).order("issued_at", { ascending: false }).limit(100);
+  return error ? fail("Unable to load certificates.", 503) : Response.json({ certificates: data ?? [] }, { headers: privateHeaders });
+}
+
+export async function POST(request: Request) {
+  const user = await authenticateAcademy(request);
+  if (!user) return fail("Sign in to complete your training.", 401);
+  const body = await parseSmallJson(request);
+  if (!body || !isUuid(body.courseId)) return fail("Invalid course.", 400);
+  const { data, error } = await user.client.rpc("academy_issue_certificate", { p_course_id: body.courseId });
+  if (error) return fail("Certificate not available. Finish all lessons and pass every assessment.", 409);
+  return Response.json({ certificate: data }, { headers: privateHeaders });
+}
