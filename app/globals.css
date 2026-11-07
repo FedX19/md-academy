@@ -9,3 +9,68 @@
 
 .school-account-actions{display:flex;align-items:center;gap:8px}.school-account-actions .school-signout{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap}
 @media(max-width:600px){.school-account-actions{gap:5px}.school-account-actions .school-signout{font-size:10px;padding:8px}}
+
+/* Shared MDC product entrance scale — MD Live / MD Arcade / MD Academy. */
+.entrance.academy-entrance{
+  min-height:100dvh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  gap:0;
+  padding:max(24px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(30px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+  background:radial-gradient(circle at 50% 35%,rgba(246,105,33,.065),transparent 43%),#090b0e;
+  text-align:center;
+}
+.academy-entry-content{
+  flex:1;
+  width:100%;
+  max-width:380px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:0;
+}
+.academy-entry-logo-wrap{width:min(64vw,260px);max-width:260px;position:relative;isolation:isolate;margin:0 auto 15px;}
+.academy-entry-logo-wrap::before{
+  content:"";position:absolute;left:50%;top:47%;z-index:-1;width:150%;aspect-ratio:1;
+  transform:translate(-50%,-50%);border-radius:50%;
+  background:radial-gradient(circle,rgba(246,105,33,.18) 0%,rgba(246,105,33,.07) 36%,transparent 71%);
+  filter:blur(17px);pointer-events:none;
+}
+.academy-entry-logo{display:block;width:100%;height:auto;object-fit:contain;}
+.academy-entry-tagline{
+  margin:0;color:#a2abb4;font-size:11px;font-weight:900;letter-spacing:.27em;
+  line-height:1.7;text-transform:uppercase;
+}
+.academy-entry-button{
+  margin-top:32px;display:inline-flex;width:min(100%,250px);min-height:56px;
+  align-items:center;justify-content:center;gap:14px;
+  background:#f66921;border:1px solid #ff9859;border-radius:0;
+  color:#101114;font-family:Arial,Helvetica,sans-serif;font-size:12px;
+  font-weight:900;letter-spacing:.13em;line-height:1.2;text-transform:uppercase;
+  text-decoration:none;transition:background .18s ease;
+}
+.academy-entry-button:hover,.academy-entry-button:focus-visible{background:#ff955f;}
+.academy-entry-button:focus-visible{outline:2px solid #ffb084;outline-offset:4px;}
+.academy-entry-button svg{width:18px;height:18px;flex:none;}
+.academy-entry-unavailable{max-width:280px;margin-top:28px;color:#a2abb4;font-size:12px;line-height:1.6;}
+.academy-entry-footer{
+  flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:5px;color:#aeb9bf;text-decoration:none;opacity:.9;
+  margin:20px auto 0;min-height:52px;
+}
+.academy-entry-footer span{font-size:9px;font-weight:800;letter-spacing:.19em;text-transform:uppercase;}
+.academy-entry-footer img{display:block;width:auto;height:28px;max-width:130px;object-fit:contain;}
+.academy-entry-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+@media(max-height:470px){
+  .entrance.academy-entrance{padding-top:12px;padding-bottom:12px}
+  .academy-entry-logo-wrap{width:min(35vw,165px);margin-bottom:4px}
+  .academy-entry-button{margin-top:15px;min-height:43px}
+  .academy-entry-footer{min-height:35px;margin-top:8px}
+  .academy-entry-footer img{height:20px}
+}
+@media(max-width:420px){.academy-entry-logo-wrap{width:min(62vw,235px)}.academy-entry-tagline{font-size:10px;letter-spacing:.23em}}
+@media(prefers-reduced-motion:reduce){.academy-entry-button{transition:none}}

@@ -1,4 +1,10 @@
-import Link from "next/link";
-import Image from "next/image";
-import { ArrowRight,BookOpenCheck,GraduationCap,Award } from "lucide-react";
-export default function Entrance(){const configured=Boolean(process.env.ACADEMY_ORIGIN&&process.env.NEXT_PUBLIC_SUPABASE_URL&&process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);return <main className="entrance"><div className="entry"><Image src="/brand/md-academy.svg" alt="MD Academy" width={285} height={285} priority/><p className="eyebrow">MODERN DAY COACH PRESENTS</p><h1>THE ONLINE SCHOOL<br/><em>FOR BETTER COACHING.</em></h1><p className="lead">Learn the system. Build your standards. Develop players the right way.</p>{configured ? <Link className="button" href="/auth/start">Enter MD Academy <ArrowRight size={18}/></Link> : <span className="button" role="status">MD Academy is being prepared</span>}<small>{configured ? "Access is limited to coaches enrolled through UniteHQ" : "Domain and coach sign-in are not active yet"}</small></div><div className="entry-traits"><span><BookOpenCheck size={16}/> Short lessons</span><span><GraduationCap size={16}/> Practical learning</span><span><Award size={16}/> Certifications</span></div></main>;}
+import { EntranceScreen } from "@/components/brand/entrance-screen";
+
+export default function Entrance() {
+  const configured = Boolean(
+    process.env.ACADEMY_ORIGIN &&
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
+  return <EntranceScreen configured={configured} />;
+}
