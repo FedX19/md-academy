@@ -14,8 +14,9 @@ export async function PUT(request:Request){
  if(typeof input.lessonId!=="string"||!/^[a-f0-9-]{36}$/i.test(input.lessonId)||typeof input.positionSeconds!=="number"||!Number.isInteger(input.positionSeconds)||input.positionSeconds<0||input.positionSeconds>86400||typeof input.complete!=="boolean"){
   return Response.json({error:"Invalid progress."},{status:400,headers:privateHeaders});
  }
- const {data:lesson,error:lessonError}=await user.client.from("academy_lessons").select("id,module_id,academy_modules(course_id)").eq("id",input.lessonId).maybeSingle();
+ const {data:lesson,error:lessonError}=await user.client.from("academy_lessons").select("id,module_id,lesson_type,academy_modules(course_id)").eq("id",input.lessonId).maybeSingle();
  if(lessonError||!lesson)return Response.json({error:"Lesson unavailable."},{status:404,headers:privateHeaders});
+ if(lesson.lesson_type==="quiz")return Response.json({error:"Assessments require server-side grading."},{status:403,headers:privateHeaders});
  const moduleRow=lesson.academy_modules as unknown as {course_id:string}|null;
  if(!moduleRow)return Response.json({error:"Lesson unavailable."},{status:404,headers:privateHeaders});
  const {data:course}=await user.client.from("academy_courses").select("id,status").eq("id",moduleRow.course_id).maybeSingle();

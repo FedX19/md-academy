@@ -15,7 +15,7 @@ export async function POST(request:Request){
  if(!user.admin&&!enrollment)return Response.json({error:"Enrollment required."},{status:403,headers:privateHeaders});
  const {data:asset}=await user.client.from("academy_media_assets").select("storage_path").eq("id",lesson.media_asset_id).maybeSingle();
  if(!asset)return Response.json({error:"Video asset unavailable."},{status:404,headers:privateHeaders});
- const {data:link,error:signError}=await user.client.storage.from("md-academy-private").createSignedUrl(asset.storage_path,180);
+ const {data:link,error:signError}=await user.client.storage.from("md-academy-private").createSignedUrl(asset.storage_path,1800);
  if(signError||!link?.signedUrl)return Response.json({error:"Video could not be loaded."},{status:503,headers:privateHeaders});
- return Response.json({url:link.signedUrl,expiresInSeconds:180},{headers:privateHeaders});
+ return Response.json({url:link.signedUrl,expiresInSeconds:1800},{headers:privateHeaders});
 }
