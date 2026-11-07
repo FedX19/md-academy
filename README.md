@@ -1,19 +1,25 @@
 # MD Academy
 
-Standalone Modern Day Coach learning application, designed to launch from UniteHQ next to Fundy Ball, MD Arcade, and MD Live.
+Modern Day Coach's standalone black-and-orange online coaching school. Launched from **UniteHQ → Platform** next to MD Arcade and MD Live.
 
-## Phase 1
-Brand foundation, responsive course interface, and Grok-friendly course documents. No real coach data or proprietary lessons should be committed until repository visibility is reviewed.
+## State
 
-## Ownership
-- Learner app and secure integrations: MD Academy application team.
-- Course authoring and future admin builder: Grok bots, isolated under `content/courses/` and `components/admin/`.
-- Publishing: a verified human admin, never an unrestricted bot.
+- Learner app, video resume, private signed Supabase Storage playback, RLS, progress, server-graded quizzes, and printable internal certificates are implemented on the Academy integration branch.
+- Admin course-authoring REST APIs are available for Grok's future course-builder UI. Publishing and course enrollment are limited to verified human administrators.
+- Real coaches are only able to enter after Academy-specific enrollment; a generic UniteHQ subscription is not access.
+- **Domain, per-project Vercel environment variables, and end-to-end live-device testing are required before enabling the UniteHQ tile.** No placeholder videos or fake certificates are production learning.
+- The repository is PUBLIC. Do not commit proprietary course videos, private training scripts, Supabase service keys, or learner data.
 
-## Safety
-- The repo was **public** when scaffolding began.
-- Never commit Supabase service keys, learner data, protected videos, or internal course scripts.
-- Course SSO and membership gates will be implemented independently of the sample preview.
-- Use short-lived, server-verified course-specific enrollments and private Supabase media.
+## Developer quick start
 
-See the evolving implementation and Grok content contracts in this repository.
+`npm ci`, `npm run test`, `npm run lint`, `npm run typecheck`, `npm run build`.
+
+Use `.env.example` and [launch checklist](docs/LAUNCH_CHECKLIST.md) for environment setup.
+Grok agents: read [authoring contract](docs/GROK_COURSE_BUILDER.md) and `AGENTS.md`.
+
+## Ownership and rollout
+
+- Course builder UI: Grok, limited to `components/admin/` and documented endpoints.
+- Academy learner and server security: protected app code and Supabase migrations.
+- Course publishing: explicit verified admin approval.
+- Vercel preview deployments are disabled to limit spend. Validate by GitHub Actions and perform only necessary production deployments.
