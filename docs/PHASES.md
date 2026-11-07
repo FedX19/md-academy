@@ -1,11 +1,11 @@
 # MD Academy build gates
 
-1. **Foundation:** branded entrance, sample dashboard, course catalog and lesson preview, bot draft validator. In progress.
-2. **Identity:** Academy-specific UniteHQ PKCE exchange, server verified Academy roles and assignments.
-3. **Learner persistence:** isolated Supabase academy tables, private media bucket, RLS, per-lesson resumable progress.
-4. **Admin builder:** Grok-built course UI and validated headless API, protected uploads, admin approval.
-5. **Assessments:** server-graded quizzes, attempt limits, immutable certificates.
-6. **Platform:** Academy tile next to MD Arcade, MD Live, Fundy Ball; canonical domain and login checks.
-7. **Hardening:** real iOS/Android playback, mobile usability, revocation tests, budget/performance monitoring.
+1. Branded app, PWA, responsive learner dashboard and sample preview — implemented.
+2. UniteHQ single-use, PKCE, Academy-enrollment-gated sign-in — code implemented, domain/env live check pending.
+3. Supabase RLS course schema, private media, resuming progress — implemented; real uploaded video test pending.
+4. Grok-friendly admin APIs for course content, quiz questions, private video uploads and assignments — implemented; Grok UI owned separately.
+5. Server-side assessments, immutable completion snapshots and print-ready internal certificates — implemented; real test course pending.
+6. UniteHQ Platform tile next to MD Arcade, MD Live and Fundy Ball — implemented **behind environment flag**. Must remain off until Academy domain and real SSO check.
+7. Security and launch QA — GitHub CI, database access checks; full device/playback production checks pending.
 
-NO production Supabase migrations, passwordless SSO routes, private media serving, payments or certificates have been activated in phase 1.
+Do not claim a coach-ready launch until an enrolled coach completes one video, a quiz and a certificate on the configured canonical domain, and a revoked coach is denied access.

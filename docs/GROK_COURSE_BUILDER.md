@@ -17,7 +17,7 @@
 5. **Quiz questions:** `POST /api/academy/admin/questions` with `{"lessonId":"<uuid>","prompt":"Which is the priority?","choices":["Throw strikes","Avoid contact"],"correctIndex":0,"sortOrder":0}`. Optional `explanation`. `GET /api/academy/admin/questions?lessonId=<uuid>` for editing. `PATCH` and `DELETE` supported for draft/review.
 6. **Preview and review:** `GET /api/academy/admin/courses`. The admin UI must preview all lesson types and request human approval.
 7. **Publish:** `POST /api/academy/admin/publish` with `{"courseId":"<uuid>"}`. **Verified Academy admin only.** Database checks for lessons, real uploaded videos, and quiz questions. Published content is frozen until versioning is implemented.
-8. **Enroll a coach:** `POST /api/academy/admin/enrollments` with `{"courseId":"<uuid>","userId":"<UniteHQ-auth-uuid>"}`. **Admin only.** To revoke: `PATCH` with `{"courseId":"<uuid>","userId":"<uuid>","status":"revoked"}`. Revocation blocks SSO course access and new playback links.
+8. **Enroll a coach:** `POST /api/academy/admin/enrollments` with `{"courseId":"<uuid>","email":"coach@example.com"}`. **Admin only.** Alternatively pass a verified UniteHQ user UUID as `userId`. To revoke: `PATCH` with `{"courseId":"<uuid>","email":"coach@example.com","status":"revoked"}`. Revocation blocks SSO course access and new playback links.
 
 ## Learner APIs (not admin tooling)
 - `GET /api/academy/me`, `GET /api/academy/courses`, `GET|PUT /api/academy/progress`
@@ -32,3 +32,5 @@
 - Keep media references as opaque UUIDs. Use the existing session JWT to upload directly from the admin's browser; do not share the JWT with external agents.
 - Course data in `content/examples/` is not live. The authoritative published course lives in Supabase.
 - The domain and Academy-specific SSO environment variables must be set before testing real learning access.
+
+**Certificates:** once videos and assessments are complete, the learner can issue an internal MDC completion certificate and print/save it as a PDF from the school. Certificate snapshots remain stable if a course is updated later.
