@@ -8,7 +8,7 @@ test("Academy entry uses the same compact one-tap layout as other MDC apps",()=>
   const component=read("components/brand/entrance-screen.tsx");
   const css=read("app/globals.css");
   assert.match(component,/src="\/brand\/md-academy\.svg"/);
-  assert.match(component,/Learn the coaching system\./);
+  assert.match(component,/Coach with a system\./);
   assert.match(component,/Enter MD Academy/);
   assert.match(component,/href="\/api\/auth\/start"/);
   assert.match(component,/Powered by/);
