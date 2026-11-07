@@ -1,6 +1,6 @@
 # MD Academy: Grok bot authoring contract (API v1)
 
-**Owner split:** Grok builds the admin UI and prepares course content. The app team owns enrollment security, private video delivery, assessments, and certificates. Course publishing and learner enrollment require a verified administrator; editor bots cannot self-publish.
+**Owner split:** Admin Studio v1 is built at `/admin`. Grok bots extend the editor UI and prepare course content, The app team owns enrollment security, private video delivery, assessments, and certificates. Course publishing and learner enrollment require a verified administrator; editor bots cannot self-publish.
 
 ## Authentication
 - Sign in via the UniteHQ PKCE flow on the canonical Academy domain.
@@ -34,3 +34,17 @@
 - The domain and Academy-specific SSO environment variables must be set before testing real learning access.
 
 **Certificates:** once videos and assessments are complete, the learner can issue an internal MDC completion certificate and print/save it as a PDF from the school. Certificate snapshots remain stable if a course is updated later.
+
+## Live Admin Studio v1
+
+The authenticated Academy administrator is redirected to `/admin` after UniteHQ sign-in. Coaches without Academy author roles go to `/school`; an administrator can also open the coach classroom from the sidebar. `GET /api/academy/me` includes `admin`, `author`, and `publisher` flags; these are presentation hints only. Every write is reauthorized on the server and in Supabase RLS.
+
+- Admin Studio overview: create private courses; select existing draft/review/published courses.
+- Curriculum Builder: create and rename modules; add video, article, or quiz lessons; edit and delete draft lessons/modules.
+- Video: direct MP4/WebM upload to private Supabase Storage, then link the registered asset to the lesson. No Vercel video proxy.
+- Quiz: author/edit/remove multiple-choice questions with answer keys available only to editors.
+- Publishing: only a verified Academy admin can publish, and only after required content checks. Published content is locked.
+- Coach Assignments: admin can enroll or revoke an existing verified UniteHQ user by exact email once a course is published.
+- Grok bots: extend `components/admin/`, but do not change authorization/RLS or publish unattended. Do not commit internal curriculum content into this public repository.
+
+Known v1 limitations: course versioning, bulk roster import, detailed cohort reporting, and transactionally safe module reordering are not implemented. Do not claim otherwise.

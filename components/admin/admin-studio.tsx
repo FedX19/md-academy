@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Award, BookOpen, Check, ChevronDown, ChevronRight, CirclePlus, ClipboardList, FileText, GraduationCap, LayoutDashboard, LibraryBig, LoaderCircle, LockKeyhole, Pencil, PlayCircle, Plus, Save, ShieldCheck, Trash2, UploadCloud, Users, Video, X } from "lucide-react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, BookOpen, Check, ChevronDown, ChevronRight, CirclePlus, ClipboardList, FileText, GraduationCap, LayoutDashboard, LibraryBig, LoaderCircle, LockKeyhole, Pencil, Plus, Save, ShieldCheck, Trash2, UploadCloud, Users, Video, X } from "lucide-react";
 import { academyRequest, browserAcademyClient } from "@/lib/academy-client";
 
 type CourseStatus = "draft" | "review" | "published" | "archived";
@@ -158,7 +158,7 @@ export function AdminStudio(){
   await browserAcademyClient()?.auth.signOut();
   window.location.replace("/");
  }
- async function createCourse(event:React.FormEvent<HTMLFormElement>){
+ async function createCourse(event:FormEvent<HTMLFormElement>){
   event.preventDefault();
   await run(async()=>{
    const {course}=await academyRequest<{course:{id:string}}>("/api/academy/admin/courses",{
@@ -170,7 +170,7 @@ export function AdminStudio(){
    setCreatingCourse(emptyCourse);setShowNewCourse(false);setView("curriculum");
   },"Course created as a private draft. Add your first module.");
  }
- async function saveCourse(event:React.FormEvent<HTMLFormElement>){
+ async function saveCourse(event:FormEvent<HTMLFormElement>){
   event.preventDefault();
   if(!selectedCourse||readOnly)return;
   await run(async()=>{
@@ -193,7 +193,7 @@ export function AdminStudio(){
    await reload();
   },"Course published. You can now assign coaches.");
  }
- async function addModule(event:React.FormEvent<HTMLFormElement>){
+ async function addModule(event:FormEvent<HTMLFormElement>){
   event.preventDefault();if(!selectedCourse||readOnly)return;
   await run(async()=>{
    const {module}=await academyRequest<{module:Module}>("/api/academy/admin/content",{
@@ -202,14 +202,14 @@ export function AdminStudio(){
    await reload();setModuleId(module.id);setModuleTitle(module.title);setLessonId(null);setNewModuleTitle("");
   },"Module added. Add lessons to this module.");
  }
- async function saveModule(event:React.FormEvent<HTMLFormElement>){
+ async function saveModule(event:FormEvent<HTMLFormElement>){
   event.preventDefault();if(!selectedModule||readOnly)return;
   await run(async()=>{
    await academyRequest("/api/academy/admin/content",{method:"PATCH",body:JSON.stringify({kind:"module",id:selectedModule.id,title:moduleTitle.trim()})});
    await reload();
   },"Module updated.");
  }
- async function addLesson(event:React.FormEvent<HTMLFormElement>){
+ async function addLesson(event:FormEvent<HTMLFormElement>){
   event.preventDefault();if(!selectedModule||readOnly)return;
   await run(async()=>{
    const {lesson}=await academyRequest<{lesson:{id:string}}>("/api/academy/admin/content",{
@@ -225,7 +225,7 @@ export function AdminStudio(){
    if(type==="quiz")await refreshQuestions(lesson.id);
   },"Lesson added. Complete its content before publishing.");
  }
- async function saveLesson(event:React.FormEvent<HTMLFormElement>){
+ async function saveLesson(event:FormEvent<HTMLFormElement>){
   event.preventDefault();if(!selectedLesson||readOnly)return;
   await run(async()=>{
    await academyRequest("/api/academy/admin/content",{method:"PATCH",body:JSON.stringify({
@@ -273,7 +273,7 @@ export function AdminStudio(){
    setUploadFile(null);await reload();
   },"Video uploaded privately and attached to the lesson.");
  }
- async function saveQuestion(event:React.FormEvent<HTMLFormElement>){
+ async function saveQuestion(event:FormEvent<HTMLFormElement>){
   event.preventDefault();
   if(!selectedLesson||selectedLesson.lesson_type!=="quiz"||readOnly)return;
   if(questionChoices.some(x=>!x.trim())){setError("Each answer option needs text.");return;}
