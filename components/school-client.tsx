@@ -13,7 +13,7 @@ type Progress = { lesson_id: string; position_seconds: number; completed_at: str
 type Viewer = { name: string; admin: boolean };
 type QuizQuestion = { id: string; prompt: string; choices: string[] };
 type QuizResult = { scorePct: number; passed: boolean; requiredPct: number; questionCount: number };
-type Certificate = { course_id: string; verification_code: string; issued_at: string };
+type Certificate = { course_id: string; verification_code: string; issued_at: string; course_title?: string; learner_name?: string };
 
 function sortedLessons(course: Course) {
   return (course.academy_modules ?? []).slice().sort((a, b) => a.sort_order - b.sort_order)
@@ -146,12 +146,12 @@ export function SchoolClient() {
     setProgressBusy(true);
     setError(null);
     try {
-      const { certificate } = await academyRequest<{ certificate: { verificationCode: string; issuedAt: string } }>("/api/academy/certificates", {
+      const { certificate } = await academyRequest<{ certificate: { verificationCode: string; issuedAt: string; courseTitle: string; learnerName: string } }>("/api/academy/certificates", {
         method: "POST", body: JSON.stringify({ courseId }),
       });
       setCertificates(items => items.some(item => item.course_id === courseId)
         ? items
-        : [...items, { course_id: courseId, verification_code: certificate.verificationCode, issued_at: certificate.issuedAt }]);
+        : [...items, { course_id: courseId, verification_code: certificate.verificationCode, issued_at: certificate.issuedAt, course_title: certificate.courseTitle, learner_name: certificate.learnerName }]);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Certificate not available.");
     } finally {
@@ -286,8 +286,9 @@ export function SchoolClient() {
                   const course = courses.find(c => c.id === cert.course_id);
                   return <div className="academy-award" key={cert.verification_code}>
                     <Award size={24} />
-                    <div><strong>{course?.title ?? "MD Academy Course"} — Completed</strong>
+                    <div><strong>{cert.course_title || course?.title || "MD Academy Course"} — Completed</strong>
                       <small>Issued {new Date(cert.issued_at).toLocaleDateString()} · Code {cert.verification_code}</small>
+                      <Link href={"/school/certificate?code=" + encodeURIComponent(cert.verification_code)} className="academy-print-link">View and print certificate</Link>
                     </div>
                   </div>;
                 })}
