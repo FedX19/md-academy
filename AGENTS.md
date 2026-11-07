@@ -2,7 +2,7 @@
 
 ## Agent ownership
 - ChatGPT/app developers: learner experience, identity, course access, progress, branding, testing.
-- Grok bots: course authoring, JSON draft metadata, and the eventual admin builder under `components/admin/`.
+- Grok bots: course authoring, JSON draft metadata, and future improvements to the existing Admin Studio under `components/admin/`.
 - Never let a bot edit shared authentication or RLS policies without a separate review.
 
 ## Grok authoring flow
@@ -19,3 +19,10 @@
 - Store learner progress only after secure server authorization and RLS are implemented.
 - Separate UniteHQ changes and migrations into reviewed coordinated PRs.
 - No extra Vercel builds for every microcommit.
+
+## Academy Admin Studio
+- `/admin` is the protected authoring workspace. `/school` remains the coach classroom.
+- Keep `app/api/academy/admin/` server authorization and Supabase RLS intact. Never expose correct quiz answers to learners.
+- Admin features use authenticated private API calls, no service-role key in the browser.
+- Public repository: never commit real course manuscripts, trainer videos, learner identities or bot credentials.
+- Course status `published` is read-only until audited revision/versioning exists.

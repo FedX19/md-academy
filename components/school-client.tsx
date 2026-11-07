@@ -180,12 +180,16 @@ export function SchoolClient() {
           <a href="#courses"><BookOpen size={18} /> My Courses</a>
           <a href="#learning"><PlayCircle size={18} /> Continue Learning</a>
           <a href="#certificates"><Award size={18} /> Certificates</a>
+          {user?.admin ? <Link href="/admin"><GraduationCap size={18} /> Academy Admin Studio</Link> : null}
         </nav>
         <p className="sidebar-bottom">Learn it. Apply it. Repeat.</p>
       </aside>
       <div className="workspace">
         <header className="topbar"><span>MODERN DAY COACH <b>/ ACADEMY</b></span>
-          <button type="button" className="school-signout" onClick={() => void signOut()}>Sign out</button>
+          <div className="school-account-actions">
+            {user?.admin ? <Link className="school-signout" href="/admin">Admin Studio</Link> : null}
+            <button type="button" className="school-signout" onClick={() => void signOut()}>Sign out</button>
+          </div>
         </header>
         <main className="content">
           <div className="intro">
