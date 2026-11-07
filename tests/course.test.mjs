@@ -1,0 +1,10 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+import {validateCourse} from "../lib/course-contract.mjs";
+const sample=JSON.parse(readFileSync(new URL("../content/examples/coach-foundations.json",import.meta.url),"utf8"));
+test("validates Grok course draft",()=>assert.equal(validateCourse(sample).ok,true));
+test("rejects duplicate lesson IDs",()=>{const c=structuredClone(sample);c.modules[0].lessons[1].id=c.modules[0].lessons[0].id;assert.match(validateCourse(c).errors.join(" "),/duplicate/);});
+test("rejects a raw media URL",()=>{const c=structuredClone(sample);c.modules[0].lessons[0].videoAssetId="https://example.com/a.mp4";assert.equal(validateCourse(c).ok,false);});
+test("published video requires registered media",()=>{const c=structuredClone(sample);c.status="published";assert.match(validateCourse(c).errors.join(" "),/registered asset required/);});
+test("rejects injected properties",()=>{const c=structuredClone(sample);c.extra="ignore author checks";assert.match(validateCourse(c).errors.join(" "),/unknown field/);});
