@@ -1,7 +1,7 @@
 "use client";
 import {useEffect,useRef,useState,Suspense} from "react";
 import {useSearchParams} from "next/navigation";
-import Image from "next/image";
+import {AuthTransitionScreen} from "@/components/brand/auth-transition-screen";
 import {academyRequest,browserAcademyClient} from "@/lib/academy-client";
 function Finish(){
  const params=useSearchParams();const once=useRef(false);
@@ -23,6 +23,6 @@ function Finish(){
    }catch(e){setError(e instanceof Error?e.message:"Unable to sign in.");}
   })();
  },[code,state]);
- return <main className="entrance"><div className="entry"><Image src="/brand/md-academy.svg" alt="MD Academy" width={230} height={230}/><h1>CONNECTING <em>YOUR ACCOUNT</em></h1>{error?<><p role="alert" className="lead">{error}</p><a className="button" href="/auth/start">Try again</a></>:<p role="status" className="lead">Opening your coaching school…</p>}</div></main>
+ return <AuthTransitionScreen error={error} />
 }
-export default function FinishPage(){return <Suspense fallback={<p>Connecting…</p>}><Finish/></Suspense>}
+export default function FinishPage(){return <Suspense fallback={<AuthTransitionScreen />}><Finish/></Suspense>}
