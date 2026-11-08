@@ -141,3 +141,11 @@ html,body{overflow-x:hidden;overflow-y:auto}
  .academy-module-panel{padding:14px}.academy-module-start{width:100%;justify-content:center}
  .academy-dialog-player .academy-player video{max-height:53dvh}
 }
+
+/* The real MDC white transparent mark on the existing warm orange Academy card. */
+.course-art .academy-course-logo{position:relative;z-index:1;display:block;width:178px;height:154px;max-width:76%;object-fit:contain;filter:drop-shadow(0 8px 16px rgba(0,0,0,.26))}
+.academy-video-issue{margin:14px 0 19px;padding:16px;background:#2a1814;border:1px solid #ad5e43;border-radius:12px;color:#f4d4c8}
+.academy-video-issue>strong{display:block;font-size:14px;color:#fff;margin-bottom:7px}
+.academy-video-issue p{font-size:12px;line-height:1.6;color:#f4d4c8}
+.academy-video-issue-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:13px}
+.academy-video-issue-actions span{max-width:360px;font-size:11px;color:#d1ad9e;line-height:1.5}

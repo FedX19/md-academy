@@ -30,6 +30,7 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
   const dialogRef=useRef<HTMLDialogElement|null>(null);
   const playerRef=useRef<HTMLVideoElement|null>(null);
   const [video, setVideo] = useState<string | null>(null);
+  const [videoIssue,setVideoIssue] = useState<{kind:"format"|"network"|"unknown";detail:string}|null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingVideo, setLoadingVideo] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -194,6 +195,7 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
     watchSession.current=null;
     watchQueue.current=Promise.resolve();
     setError(null);
+    setVideoIssue(null);
     setVideo(null);
     setQuizQuestions([]);
     setQuizAnswers({});
@@ -383,7 +385,7 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
                   const pct=lessons.length?Math.round(done/lessons.length*100):0;
                   return <button key={course.id} type="button" className="course academy-course-card"
                     onClick={()=>openCourse(course)} aria-label={"Open "+course.title+" course and module progress"}>
-                    <div className="course-art"><span>MD</span><small>{isPreview?"COACH TRAINING":course.status.toUpperCase()}</small></div>
+                    <div className="course-art"><Image className="academy-course-logo" src="/brand/mdc-logo-clear-white.png" alt="Modern Day Coach" width={260} height={260} priority={false}/><small>{isPreview?"COACH TRAINING":course.status.toUpperCase()}</small></div>
                     <div className="course-copy">
                       <h3>{course.title}</h3><p>{course.summary}</p>
                       <div className="academy-card-meta"><span>{course.academy_modules?.length??0} modules</span><span>{done} / {lessons.length} lessons</span></div>
@@ -486,8 +488,32 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
                 onRateChange={event=>{if(event.currentTarget.playbackRate>1)event.currentTarget.playbackRate=1;}}
                 onPause={event=>{if(!event.currentTarget.ended)reportWatch(selected,event.currentTarget.currentTime,"pause");}}
                 onEnded={event=>reportWatch(selected,event.currentTarget.currentTime,"ended")}
-                onError={() => setError("Playback was interrupted. Reopen this lesson to renew your video link.")}
+                onLoadedData={()=>setVideoIssue(null)}
+                onError={event=>{
+                  const media=event.currentTarget;
+                  const code=media.error?.code;
+                  const kind=code===3||code===4?"format":code===2?"network":"unknown";
+                  setVideoIssue({
+                    kind,
+                    detail:kind==="format"
+                      ?"Your browser could not decode or load this MP4. The video link may work, but the file could use a codec your device cannot play. H.264 video with AAC audio in an MP4 is the recommended export."
+                      :kind==="network"
+                        ?"The video connection was interrupted. Try requesting a fresh private playback link."
+                        :"This video could not start. Try requesting a fresh link, then check the MP4 encoding if it continues.",
+                  });
+                }}
               /> : null}
+              {selected.lesson_type === "video" && videoIssue ? <div className="academy-video-issue" role="alert">
+                <strong>Video playback needs attention</strong>
+                <p>{videoIssue.detail}</p>
+                <div className="academy-video-issue-actions">
+                  <button className="button" type="button" disabled={loadingVideo} onClick={()=>void openLesson(selected)}>
+                    <PlayCircle size={16}/> Retry video
+                  </button>
+                  {isPreview ? <span>In Admin Studio, re-export and re-upload any incompatible lesson using H.264/AAC MP4.</span>
+                    : <span>Contact your league director if retrying still fails.</span>}
+                </div>
+              </div> : null}
               {selected.lesson_type === "article" ? <div className="article-copy">{selected.body || "No reading content has been added yet."}</div> : null}
               {selected.lesson_type === "quiz" ? <div className="academy-quiz">
                 {quizQuestions.length === 0 && !loadingVideo && !error ? <p>This assessment has not been authored yet.</p> : null}
