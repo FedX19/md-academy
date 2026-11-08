@@ -84,11 +84,8 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
     return ()=>{document.body.style.overflow=prior;if(dialog.open)dialog.close();};
   },[activeCourseId]);
 
-  // Native dialogs remain above the mobile navigation; dismiss the menu before
-  // opening a course so the learner's video/modal always takes focus.
-  useEffect(()=>{
-    if(activeCourseId)setMobileMenuOpen(false);
-  },[activeCourseId]);
+  // Mobile menu actions close themselves before navigation; no state changes
+  // during effects, which avoids cascading renders on mobile Safari.
 
   useEffect(()=>{
     if(!mobileMenuOpen)return;
