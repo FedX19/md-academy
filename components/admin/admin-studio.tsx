@@ -31,6 +31,26 @@ const audienceNames:Record<Audience,string>={
  "mdc-coach":"MDC Coaches","league-coach":"League Coaches",parent:"Parents",public:"Public Learners",
 };
 const typeNames:Record<LessonType,string>={video:"Video lesson",article:"Reading / article",quiz:"Knowledge check"};
+/**
+ * Identify unmistakable codecs in an uploaded MP4 without reading the entire video.
+ * Check the start and tail since MP4's 'moov' atom may be at either end.
+ * Unknown codecs are allowed; user may still need to export to H.264/AAC.
+ */
+async function detectMdcMp4Encoding(file:File):Promise<"h264"|"hevc"|"av1"|"unknown"> {
+  if(!/\.mp4$/i.test(file.name) && file.type!=="video/mp4")return "unknown";
+  const windowSize=1024*1024;
+  const head=await file.slice(0,Math.min(file.size,windowSize)).arrayBuffer();
+  const tail=file.size>windowSize
+    ?await file.slice(Math.max(windowSize,file.size-windowSize)).arrayBuffer()
+    :new ArrayBuffer(0);
+  const decoder=new TextDecoder("latin1");
+  const sample=decoder.decode(head)+decoder.decode(tail);
+  if(/(?:hvc1|hev1)/.test(sample))return "hevc";
+  if(/(?:av01)/.test(sample))return "av1";
+  if(/(?:avc1|avc3)/.test(sample))return "h264";
+  return "unknown";
+}
+
 async function measuredVideoDuration(file: File): Promise<number> {
   return await new Promise<number>((resolve, reject) => {
     const url=URL.createObjectURL(file);
@@ -277,6 +297,13 @@ export function AdminStudio(){
   if(file.size===0){setError("The selected video is empty.");return;}
   const lessonIdForUpload=selectedLesson.id;
   await run(async()=>{
+   const encoding=await detectMdcMp4Encoding(file);
+   if(mime==="video/mp4" && encoding==="hevc"){
+     throw Error("This MP4 is encoded with HEVC/H.265, which is not reliable across coaching devices. Export H.264 video + AAC audio in an MP4 file, then upload it again.");
+   }
+   if(mime==="video/mp4" && encoding==="av1"){
+     throw Error("This MP4 uses AV1 video. Export a widely compatible H.264/AAC MP4 for MD Academy coaches.");
+   }
    setLoadingMessage("Checking actual video duration...");
    const videoDuration=await measuredVideoDuration(file);
    setLoadingMessage("Reserving your private video...");
