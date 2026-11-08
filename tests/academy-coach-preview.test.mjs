@@ -29,5 +29,5 @@ test("simulated preview cannot write course progress, submit real quizzes, or cl
  assert.match(school, /if \(isPreview\) \{/);
  assert.match(school, /if \(isPreview \|\| progressBusy\) return/);
  assert.match(school, /setQuizResult\(\{ scorePct: score, passed, requiredPct: required/);
- assert.match(school, /Preview.*simulated/);
+ assert.match(school, /Your activity is simulated/);
 });
