@@ -8,10 +8,10 @@ import { academyRequest, browserAcademyClient } from "@/lib/academy-client";
 
 type Lesson = { id: string; title: string; summary: string; body: string; lesson_type: "video" | "article" | "quiz"; duration_seconds: number; sort_order: number };
 type Module = { id: string; title: string; sort_order: number; academy_lessons: Lesson[] };
-type Course = { id: string; slug: string; title: string; summary: string; status: string; academy_modules: Module[] };
+type Course = { id: string; slug: string; title: string; summary: string; status: string; passing_score_pct?: number; academy_modules: Module[] };
 type Progress = { lesson_id: string; position_seconds: number; completed_at: string | null; updated_at?: string };
 type Viewer = { name: string; admin: boolean };
-type QuizQuestion = { id: string; prompt: string; choices: string[] };
+type QuizQuestion = { id: string; prompt: string; choices: string[]; correct_index?: number };
 type QuizResult = { scorePct: number; passed: boolean; requiredPct: number; questionCount: number };
 type Certificate = { course_id: string; verification_code: string; issued_at: string; course_title?: string; learner_name?: string };
 
@@ -20,7 +20,8 @@ function sortedLessons(course: Course) {
     .flatMap(m => (m.academy_lessons ?? []).slice().sort((a, b) => a.sort_order - b.sort_order));
 }
 
-export function SchoolClient() {
+export function SchoolClient({ previewCourseId }: { previewCourseId?: string } = {}) {
+  const isPreview = Boolean(previewCourseId);
   const [user, setUser] = useState<Viewer | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [progress, setProgress] = useState<Progress[]>([]);
@@ -39,6 +40,19 @@ export function SchoolClient() {
   const watchSession = useRef<{ lessonId: string; id: string } | null>(null);
   const watchQueue = useRef<Promise<void>>(Promise.resolve());
 
+  // Preview state is intentionally memory-only. Never call progress, quiz grading,
+  // enrollment, video-watch or certificate write endpoints in this mode.
+  function previewProgress(lesson: Lesson, seconds: number, complete: boolean) {
+    const now = new Date().toISOString();
+    const position = Math.min(86400, Math.max(0, Math.floor(Number.isFinite(seconds) ? seconds : 0)));
+    setProgress(items => {
+      const prior = items.find(p => p.lesson_id === lesson.id);
+      const row: Progress = { lesson_id: lesson.id, position_seconds: position,
+        completed_at: prior?.completed_at ?? (complete ? now : null), updated_at: now };
+      return prior ? items.map(item => item.lesson_id === lesson.id ? row : item) : [...items, row];
+    });
+  }
+
   function resumeLesson(course: Course): Lesson | null {
     const lessons = sortedLessons(course);
     const unfinished = lessons.filter(l => !progress.some(p => p.lesson_id === l.id && p.completed_at));
@@ -50,6 +64,7 @@ export function SchoolClient() {
   const formatTime = (seconds:number) => Math.floor(seconds/60)+":"+String(Math.floor(seconds%60)).padStart(2,"0");
 
   async function beginWatch(lesson: Lesson, seconds: number) {
+    if (isPreview) return;
     try {
       const { sessionId } = await academyRequest<{ sessionId: string }>("/api/academy/watch", {
         method:"POST",body:JSON.stringify({lessonId:lesson.id,positionSeconds:Math.max(0,Math.floor(seconds))}),
@@ -58,6 +73,7 @@ export function SchoolClient() {
     } catch(cause) { setError(cause instanceof Error ? cause.message : "Watch session unavailable."); }
   }
   function reportWatch(lesson: Lesson,seconds:number,event:"tick"|"pause"|"ended"){
+    if (isPreview) { previewProgress(lesson,seconds,event==="ended"); return; }
     const session=watchSession.current;
     if (!session || session.lessonId!==lesson.id) return;
     const secondsValue=Math.min(86400,Math.max(0,Math.floor(Number.isFinite(seconds)?seconds:0)));
@@ -91,16 +107,28 @@ export function SchoolClient() {
     async function load() {
       try {
         const me = await academyRequest<{ user: Viewer }>("/api/academy/me");
-        const [catalog, history, awards] = await Promise.all([
-          academyRequest<{ courses: Course[] }>("/api/academy/courses"),
-          academyRequest<{ progress: Progress[] }>("/api/academy/progress"),
-          academyRequest<{ certificates: Certificate[] }>("/api/academy/certificates"),
-        ]);
-        if (!cancelled) {
-          setUser(me.user);
-          setCourses(catalog.courses);
-          setProgress(history.progress);
-          setCertificates(awards.certificates);
+        if (previewCourseId) {
+          if (!me.user.admin) throw new Error("Administrator access required to preview drafts.");
+          const response = await academyRequest<{ course: Course }>("/api/academy/admin/preview?courseId=" + encodeURIComponent(previewCourseId));
+          if (!cancelled) {
+            // Render as a learner. Hide admin-only menus and production progress.
+            setUser({ name: "League Coach (Preview)", admin: false });
+            setCourses([response.course]);
+            setProgress([]);
+            setCertificates([]);
+          }
+        } else {
+          const [catalog, history, awards] = await Promise.all([
+            academyRequest<{ courses: Course[] }>("/api/academy/courses"),
+            academyRequest<{ progress: Progress[] }>("/api/academy/progress"),
+            academyRequest<{ certificates: Certificate[] }>("/api/academy/certificates"),
+          ]);
+          if (!cancelled) {
+            setUser(me.user);
+            setCourses(catalog.courses);
+            setProgress(history.progress);
+            setCertificates(awards.certificates);
+          }
         }
       } catch (cause) {
         if (!cancelled) setError(cause instanceof Error ? cause.message : "Academy is unavailable.");
@@ -110,7 +138,7 @@ export function SchoolClient() {
     }
     void load();
     return () => { cancelled = true; };
-  }, []);
+  }, [previewCourseId]);
 
   async function openLesson(lesson: Lesson) {
     const seq = ++loadSeq.current;
@@ -126,7 +154,7 @@ export function SchoolClient() {
     if (lesson.lesson_type === "article") return;
     if (lesson.lesson_type === "quiz") {
       try {
-        const quiz = await academyRequest<{ questions: QuizQuestion[] }>("/api/academy/quiz?lessonId=" + encodeURIComponent(lesson.id));
+        const quiz = await academyRequest<{ questions: QuizQuestion[] }>((isPreview ? "/api/academy/admin/preview?lessonId=" : "/api/academy/quiz?lessonId=") + encodeURIComponent(lesson.id));
         if (loadSeq.current === seq) setQuizQuestions(quiz.questions);
       } catch (cause) {
         if (loadSeq.current === seq) setError(cause instanceof Error ? cause.message : "Assessment not available.");
@@ -136,7 +164,7 @@ export function SchoolClient() {
       return;
     }
     try {
-      const result = await academyRequest<{ url: string }>("/api/academy/playback", {
+      const result = await academyRequest<{ url: string }>(isPreview ? "/api/academy/admin/preview" : "/api/academy/playback", {
         method: "POST",
         body: JSON.stringify({ lessonId: lesson.id }),
       });
@@ -149,6 +177,7 @@ export function SchoolClient() {
   }
 
   async function saveProgress(lesson: Lesson, seconds: number, complete: boolean) {
+    if (isPreview) { previewProgress(lesson, seconds, complete); return; }
     if (lesson.lesson_type === "quiz") return;
     if (complete) setProgressBusy(true);
     try {
@@ -174,6 +203,16 @@ export function SchoolClient() {
 
   async function submitQuiz(lesson: Lesson) {
     if (progressBusy || quizQuestions.length === 0 || quizQuestions.some(question => quizAnswers[question.id] === undefined)) return;
+    if (isPreview) {
+      const course = courses.find(c => sortedLessons(c).some(l => l.id === lesson.id));
+      const required = course?.passing_score_pct ?? 80;
+      const correct = quizQuestions.filter(q => q.correct_index !== undefined && quizAnswers[q.id] === q.correct_index).length;
+      const score = Math.round(100 * correct / quizQuestions.length);
+      const passed = score >= required;
+      setQuizResult({ scorePct: score, passed, requiredPct: required, questionCount: quizQuestions.length });
+      if (passed) previewProgress(lesson, 0, true);
+      return;
+    }
     setProgressBusy(true);
     setError(null);
     try {
@@ -193,7 +232,7 @@ export function SchoolClient() {
   }
 
   async function issueCertificate(courseId: string) {
-    if (progressBusy) return;
+    if (isPreview || progressBusy) return;
     setProgressBusy(true);
     setError(null);
     try {
@@ -215,7 +254,7 @@ export function SchoolClient() {
     window.location.replace("/");
   }
 
-  const visible = courses.filter(course => course.status === "published" || user?.admin);
+  const visible = isPreview ? courses : courses.filter(course => course.status === "published" || user?.admin);
   const selectedCourse = selected ? visible.find(course => sortedLessons(course).some(lesson => lesson.id === selected.id)) : null;
   const lessonSequence = selectedCourse ? sortedLessons(selectedCourse) : [];
   const nextIndex = selected ? lessonSequence.findIndex(lesson => lesson.id === selected.id) + 1 : 0;
@@ -239,10 +278,14 @@ export function SchoolClient() {
         <p className="sidebar-bottom">Learn it. Apply it. Repeat.</p>
       </aside>
       <div className="workspace">
+        {isPreview ? <div className="academy-preview-banner" role="status">
+          <span><strong>PREVIEW AS LEAGUE COACH</strong> · Draft preview only. Your activity is simulated and will not be saved or issue a certificate.</span>
+          <Link href="/admin">Back to Course Builder <ArrowRight size={15}/></Link>
+        </div> : null}
         <header className="topbar"><span>MODERN DAY COACH <b>/ ACADEMY</b></span>
           <div className="school-account-actions">
             {user?.admin ? <Link className="school-signout" href="/admin">Admin Studio</Link> : null}
-            <button type="button" className="school-signout" onClick={() => void signOut()}>Sign out</button>
+            {isPreview ? <Link className="school-signout" href="/admin">Exit Preview</Link> : <button type="button" className="school-signout" onClick={() => void signOut()}>Sign out</button>}
           </div>
         </header>
         <main className="content">
@@ -276,7 +319,7 @@ export function SchoolClient() {
                   const lessons = sortedLessons(course);
                   const done = lessons.filter(l => progress.some(p => p.lesson_id === l.id && p.completed_at)).length;
                   return <div className="course" key={course.id}>
-                    <div className="course-art"><span>MD</span><small>{course.status.toUpperCase()}</small></div>
+                    <div className="course-art"><span>MD</span><small>{isPreview ? "COACH TRAINING" : course.status.toUpperCase()}</small></div>
                     <div className="course-copy">
                       <h3>{course.title}</h3><p>{course.summary}</p>
                       <div>{done} / {lessons.length} complete <ArrowRight size={16} /></div>
@@ -287,7 +330,7 @@ export function SchoolClient() {
                       {resumeLesson(course) ? <button type="button" className="academy-resume-course" onClick={()=>void openLesson(resumeLesson(course)!)}>
                         <PlayCircle size={16}/> {progress.some(p=>sortedLessons(course).some(l=>l.id===p.lesson_id))?"Resume course":"Start course"}
                       </button> : null}
-                      {course.status === "published" && lessons.length > 0 && done === lessons.length && !certificates.some(cert => cert.course_id === course.id)
+                      {!isPreview && course.status === "published" && lessons.length > 0 && done === lessons.length && !certificates.some(cert => cert.course_id === course.id)
                         ? <button type="button" className="academy-cert-button" disabled={progressBusy} onClick={() => void issueCertificate(course.id)}><Award size={17} /> Claim completion certificate</button> : null}
                       {course.academy_modules?.slice().sort((a, b) => a.sort_order - b.sort_order).map(module =>
                         <section key={module.id}>

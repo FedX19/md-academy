@@ -399,6 +399,9 @@ export function AdminStudio(){
      <button type="button" className="studio-back" onClick={exitToOverview}><ArrowLeft size={16}/> All courses</button>
      <div className="studio-page-heading studio-course-heading"><div><div className="studio-eyebrow">CURRICULUM BUILDER <span className={"studio-status "+selectedCourse.status}>{statusName(selectedCourse.status)}</span></div>
       <h1>{selectedCourse.title}</h1><p>{countLessons(selectedCourse)} lessons across {selectedCourse.academy_modules?.length??0} modules · {audienceNames[selectedCourse.audience]}</p></div>
+      <Link className="studio-secondary" href={"/admin/preview?courseId="+encodeURIComponent(selectedCourse.id)} target="_blank" rel="noopener noreferrer">
+       <GraduationCap size={17}/> Preview as League Coach <ArrowRight size={16}/>
+      </Link>
       {selectedCourse.status==="published"&&viewer?.publisher?<button className="studio-secondary" type="button" onClick={showCoaches}><Users size={17}/> Assign Coaches</button>:null}
      </div>
      {readOnly?<div className="studio-inline-warning"><LockKeyhole size={17}/> Published curriculum is locked to preserve coach progress and certifications. New revisions will need a separate draft.</div>:null}
