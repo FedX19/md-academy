@@ -149,3 +149,112 @@ html,body{overflow-x:hidden;overflow-y:auto}
 .academy-video-issue p{font-size:12px;line-height:1.6;color:#f4d4c8}
 .academy-video-issue-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:13px}
 .academy-video-issue-actions span{max-width:360px;font-size:11px;color:#d1ad9e;line-height:1.5}
+
+
+/* iOS Safari dialog fix: auto height + flex shrinks to header-only.
+   Give the native top-layer dialog an explicit viewport-based height, and
+   keep only the inner content scrolling while the header/close stay visible. */
+.academy-course-dialog{
+  position:fixed;
+  inset:0;
+  margin:auto;
+  height:min(88dvh,860px);
+  min-height:0;
+  max-height:calc(100dvh - 24px);
+  display:none;
+}
+.academy-course-dialog[open]{display:flex;flex-direction:column}
+.academy-course-dialog .academy-modal-header{flex:0 0 auto}
+.academy-course-dialog .academy-modal-scroll{
+  display:block;
+  flex:1 1 0;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+  overscroll-behavior:contain;
+  padding-bottom:max(28px,env(safe-area-inset-bottom));
+}
+.academy-modal-scroll .academy-player-modal{
+  margin:0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+}
+.academy-modal-scroll .academy-video-loading{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  min-height:180px;
+  margin:14px 0;
+}
+.academy-modal-scroll .academy-player video{
+  display:block;
+  width:100%;
+  aspect-ratio:16/9;
+  min-height:180px;
+  height:auto;
+  max-height:min(65dvh,650px);
+  background:#050505;
+  object-fit:contain;
+  margin:12px 0 17px;
+}
+.academy-modal-feedback{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:12px;
+  color:#f8ded0;
+  background:#311b15;
+  border:1px solid #98553c;
+  border-radius:11px;
+  padding:13px 15px;
+  margin:2px 0 18px;
+  line-height:1.5;
+  font-size:12px;
+}
+.academy-modal-feedback button{
+  display:inline-flex;align-items:center;gap:7px;
+  color:#111;background:#f66921;border:0;
+  border-radius:7px;font-weight:800;padding:10px 13px;
+}
+.academy-player-summary{color:#aeb0b8;font-size:12px;line-height:1.6}
+.sidebar nav .academy-nav-continue{
+  display:flex;align-items:center;gap:12px;
+  width:100%;padding:14px;text-align:left;
+  color:#b5b7bf;background:none;border:0;
+  border-radius:9px;font:inherit;font-size:13px;cursor:pointer;
+}
+.sidebar nav .academy-nav-continue:hover,.sidebar nav .academy-nav-continue:focus-visible{
+  background:#272a2d;color:#fff;
+}
+@media(max-width:760px){
+  .academy-course-dialog,.academy-course-dialog.academy-dialog-player{
+    width:calc(100vw - 12px);
+    height:calc(100dvh - 24px);
+    max-height:calc(100dvh - 24px);
+    min-height:0;
+    inset:0;
+    margin:auto;
+  }
+  .academy-modal-header{padding:12px 15px}
+  .academy-modal-scroll{padding:12px 15px 18px}
+  .academy-course-dialog .academy-modal-scroll{padding-bottom:max(24px,env(safe-area-inset-bottom))}
+  .academy-modal-header h2{font-size:clamp(18px,5vw,23px);line-height:1.2}
+  .academy-modal-scroll .academy-player video{
+    min-height:160px;
+    max-height:46dvh;
+    aspect-ratio:16/9;
+  }
+}
+@supports not (height:100dvh){
+  .academy-course-dialog{height:88vh;max-height:calc(100vh - 24px)}
+  @media(max-width:760px){
+    .academy-course-dialog,.academy-course-dialog.academy-dialog-player{
+      height:calc(100vh - 24px);max-height:calc(100vh - 24px)
+    }
+  }
+}

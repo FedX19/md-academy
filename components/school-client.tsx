@@ -47,13 +47,14 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
   const previewAnchor=useRef<{id:string;position:number;at:number}|null>(null);
 
   function openCourse(course:Course) {
-    setError(null); setSelected(null); setVideo(null); setActiveCourseId(course.id);
+    setError(null);setVideoIssue(null);setSelected(null);setVideo(null);setActiveCourseId(course.id);
   }
   function closeCourse() {
     // Pause before unmounting so the final legitimate watch segment is saved.
     if(playerRef.current && !playerRef.current.paused) playerRef.current.pause();
+    ++loadSeq.current; // Prevent a late signed-link request reopening media after exit.
     setActiveCourseId(null); setSelected(null); setVideo(null);
-    setError(null); watchSession.current=null;
+    setError(null);setVideoIssue(null);watchSession.current=null;
   }
   useEffect(()=>{
     const dialog=dialogRef.current;
@@ -63,6 +64,15 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
     document.body.style.overflow="hidden";
     return ()=>{document.body.style.overflow=prior;if(dialog.open)dialog.close();};
   },[activeCourseId]);
+
+  // Always start each lesson at its player instead of retaining the scroll
+  // position from the previous course outline or lesson.
+  useEffect(()=>{
+    if(activeCourseId){
+      const scroll=dialogRef.current?.querySelector<HTMLElement>(".academy-modal-scroll");
+      if(scroll)scroll.scrollTop=0;
+    }
+  },[activeCourseId,selected?.id]);
 
   function recordPreviewWatch(lesson:Lesson, seconds:number,event:"tick"|"pause"|"ended"|"seek"){
     const now=Date.now(),position=Math.max(0,Math.floor(seconds));
@@ -335,7 +345,12 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
         <div className="nav-label">YOUR COACHING SCHOOL</div>
         <nav>
           <a href="#courses"><BookOpen size={18} /> My Courses</a>
-          <a href="#courses"><PlayCircle size={18} /> Continue Learning</a>
+          {resumeTarget && resumeCourse
+            ? <button type="button" className="academy-nav-continue"
+                onClick={()=>openLessonFromCourse(resumeTarget,resumeCourse)}>
+                <PlayCircle size={18}/> Continue Learning
+              </button>
+            : <a href="#courses"><PlayCircle size={18}/> Continue Learning</a>}
           <a href="#certificates"><Award size={18} /> Certificates</a>
           {user?.admin ? <Link href="/admin"><GraduationCap size={18} /> Academy Admin Studio</Link> : null}
         </nav>
@@ -359,7 +374,7 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
             <p>{user ? "Welcome, " + user.name + ". Pick up where you left off." : "Connecting your UniteHQ account…"}</p>
           </div>
           {loading ? <p role="status" className="loading-status"><LoaderCircle size={18} /> Loading your courses…</p> : null}
-          {error ? <div role="alert" className="notice">{error} {!user && !loading ? <a href="/auth/start"> Sign in through UniteHQ</a> : null}</div> : null}
+          {error && !activeCourseId ? <div role="alert" className="notice">{error} {!user && !loading ? <a href="/auth/start"> Sign in through UniteHQ</a> : null}</div> : null}
           {user ? <>
             <div className="benefits">
               <div><ShieldCheck /><strong>Private courses</strong><span>Assigned training only</span></div>
@@ -406,7 +421,8 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
                   <div className="academy-modal-header-main">
                     {selected ? <button type="button" className="academy-modal-back" onClick={()=>{
                       if(playerRef.current&&!playerRef.current.paused)playerRef.current.pause();
-                      setSelected(null);setVideo(null);setError(null);
+                      ++loadSeq.current;
+                      setSelected(null);setVideo(null);setError(null);setVideoIssue(null);
                     }}><ArrowLeft size={18}/> All modules</button>
                       : <span className="eyebrow">YOUR COURSE</span>}
                     <h2>{selected?selected.title:activeCourse.title}</h2>
@@ -414,7 +430,14 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
                   </div>
                   <button type="button" className="academy-modal-close" onClick={closeCourse} aria-label="Close course window"><X size={22}/></button>
                 </div>
-                <div className="academy-modal-scroll" key={selected?.id??"course"}>
+                <div className="academy-modal-scroll" key={selected?.id??"course"} tabIndex={0}
+                  aria-label={selected ? "Lesson content and video" : "Course module list and progress"}>
+                  {error ? <div className="academy-modal-feedback" role="alert">
+                    <span>{error}</span>
+                    {selected?.lesson_type==="video" && !loadingVideo
+                      ? <button type="button" onClick={()=>void openLesson(selected)}><PlayCircle size={16}/> Retry video</button>
+                      : null}
+                  </div> : null}
                   {!selected ? <div className="academy-course-overview">
                     <div className="academy-overall-progress">
                       <div className="academy-overall-header">
@@ -459,9 +482,7 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
                   </div> : null}
                   {selected ? <section className="academy-player academy-player-modal" id="learning">
               <span className="eyebrow">MODULE LESSON · {selected.lesson_type.toUpperCase()}</span>
-              <h2>{selected.title}</h2><p>{selected.summary}</p>
-              {selected.lesson_type==="video" ? <p className="academy-watch-rule"><ShieldCheck size={15}/> Complete the entire video at normal speed. Skipped portions do not earn credit, and progress is saved to your account.</p> : null}
-              {loadingVideo ? <div role="status" className="player-placeholder">Loading your video…</div> : null}
+              {loadingVideo ? <div role="status" className="player-placeholder academy-video-loading"><LoaderCircle size={22}/> Loading your lesson…</div> : null}
               {video && selected.lesson_type === "video" ? <video
                 ref={playerRef} key={selected.id} controls playsInline preload="metadata" src={video}
                 onLoadedMetadata={event => {
@@ -514,6 +535,8 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
                     : <span>Contact your league director if retrying still fails.</span>}
                 </div>
               </div> : null}
+              {selected.lesson_type==="video" ? <p className="academy-watch-rule"><ShieldCheck size={15}/> Watch this entire video at normal speed to complete the lesson. Progress is remembered when you return.</p> : null}
+              {selected.summary ? <p className="academy-player-summary">{selected.summary}</p> : null}
               {selected.lesson_type === "article" ? <div className="article-copy">{selected.body || "No reading content has been added yet."}</div> : null}
               {selected.lesson_type === "quiz" ? <div className="academy-quiz">
                 {quizQuestions.length === 0 && !loadingVideo && !error ? <p>This assessment has not been authored yet.</p> : null}
@@ -544,7 +567,8 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
                 {nextLesson ? <button type="button" className="button" onClick={() => void openLesson(nextLesson)}>Next lesson <ArrowRight size={16} /></button> : null}
                 <button type="button" className="academy-back-lessons" onClick={()=>{
                   if(playerRef.current&&!playerRef.current.paused)playerRef.current.pause();
-                  setSelected(null);setVideo(null);setError(null);
+                  ++loadSeq.current;
+                  setSelected(null);setVideo(null);setError(null);setVideoIssue(null);
                 }}>Back to course modules</button>
               </div>
             </section> : null}
