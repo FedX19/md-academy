@@ -31,6 +31,28 @@ const audienceNames:Record<Audience,string>={
  "mdc-coach":"MDC Coaches","league-coach":"League Coaches",parent:"Parents",public:"Public Learners",
 };
 const typeNames:Record<LessonType,string>={video:"Video lesson",article:"Reading / article",quiz:"Knowledge check"};
+async function measuredVideoDuration(file: File): Promise<number> {
+  return await new Promise<number>((resolve, reject) => {
+    const url=URL.createObjectURL(file);
+    const video=document.createElement("video");
+    let closed=false;
+    const finish=(duration?:number)=>{
+      if(closed)return;
+      closed=true;
+      video.removeAttribute("src");
+      video.load();
+      URL.revokeObjectURL(url);
+      if(!duration||!Number.isFinite(duration)||duration<30||duration>5400){
+        reject(new Error("Unable to verify video length. Use a web-ready MP4/WebM between 30 seconds and 90 minutes."));
+      }else resolve(Math.ceil(duration));
+    };
+    video.preload="metadata";
+    video.onloadedmetadata=()=>finish(video.duration);
+    video.onerror=()=>finish();
+    video.src=url;
+  });
+}
+
 const slugify=(value:string)=>value.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,72);
 const ordered=<T extends {sort_order:number}>(items:T[]|undefined)=>[...(items??[])].sort((a,b)=>a.sort_order-b.sort_order);
 const nextOrder=(items:{sort_order:number}[]|undefined)=>Math.max(-1,...(items??[]).map(x=>x.sort_order))+1;
@@ -255,6 +277,8 @@ export function AdminStudio(){
   if(file.size===0){setError("The selected video is empty.");return;}
   const lessonIdForUpload=selectedLesson.id;
   await run(async()=>{
+   setLoadingMessage("Checking actual video duration...");
+   const videoDuration=await measuredVideoDuration(file);
    setLoadingMessage("Reserving your private video...");
    const reservation=await academyRequest<{assetId:string;bucket:string;path:string}>("/api/academy/admin/media",{
     method:"POST",body:JSON.stringify({courseId:selectedCourse.id,mimeType:mime}),
@@ -268,10 +292,12 @@ export function AdminStudio(){
    if(storageError)throw Error("Video upload failed: "+storageError.message);
    setLoadingMessage("Linking video to lesson...");
    await academyRequest("/api/academy/admin/content",{method:"PATCH",
-    body:JSON.stringify({kind:"lesson",id:lessonIdForUpload,mediaAssetId:reservation.assetId}),
+    body:JSON.stringify({kind:"lesson",id:lessonIdForUpload,mediaAssetId:reservation.assetId,durationSeconds:videoDuration}),
    });
-   setUploadFile(null);await reload();
-  },"Video uploaded privately and attached to the lesson.");
+   setUploadFile(null);
+   setLessonDraft(draft=>({...draft,duration:Math.ceil(videoDuration/60)}));
+   await reload();
+  },"Video uploaded privately. The lesson duration was synchronized to the real video length.");
  }
  async function saveQuestion(event:FormEvent<HTMLFormElement>){
   event.preventDefault();
@@ -456,7 +482,7 @@ export function AdminStudio(){
          </div>:null}
          {loadingMessage?<p role="status" className="studio-muted">{loadingMessage}</p>:null}
          {uploadStatus?<p className="studio-muted">{uploadStatus}</p>:null}
-         <p className="studio-muted">300 MiB maximum. The file does not pass through Vercel. Use a compressed, web-ready MP4 for reliable playback.</p>
+         <p className="studio-muted">300 MiB maximum, subject to the global Supabase limit. The video does not pass through Vercel. Real playback duration is captured automatically to protect certification accuracy.</p>
         </div>:null}
         {selectedLesson.lesson_type==="quiz"?<div className="studio-quiz-panel">
          <div className="studio-section-title"><div><h3><ClipboardList size={20}/> Knowledge Check</h3><p>Coaches will see the questions but never the correct-answer keys.</p></div></div>

@@ -16,7 +16,7 @@ export async function PUT(request:Request){
  }
  const {data:lesson,error:lessonError}=await user.client.from("academy_lessons").select("id,module_id,lesson_type,academy_modules(course_id)").eq("id",input.lessonId).maybeSingle();
  if(lessonError||!lesson)return Response.json({error:"Lesson unavailable."},{status:404,headers:privateHeaders});
- if(lesson.lesson_type==="quiz")return Response.json({error:"Assessments require server-side grading."},{status:403,headers:privateHeaders});
+ if(lesson.lesson_type==="quiz"||lesson.lesson_type==="video")return Response.json({error:"Video completion is recorded by verified playback. Quizzes require grading."},{status:403,headers:privateHeaders});
  const moduleRow=lesson.academy_modules as unknown as {course_id:string}|null;
  if(!moduleRow)return Response.json({error:"Lesson unavailable."},{status:404,headers:privateHeaders});
  const {data:course}=await user.client.from("academy_courses").select("id,status").eq("id",moduleRow.course_id).maybeSingle();
