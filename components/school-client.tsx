@@ -9,7 +9,7 @@ import { academyRequest, browserAcademyClient } from "@/lib/academy-client";
 type Lesson = { id: string; title: string; summary: string; body: string; lesson_type: "video" | "article" | "quiz"; duration_seconds: number; sort_order: number };
 type Module = { id: string; title: string; sort_order: number; academy_lessons: Lesson[] };
 type Course = { id: string; slug: string; title: string; summary: string; status: string; academy_modules: Module[] };
-type Progress = { lesson_id: string; position_seconds: number; completed_at: string | null };
+type Progress = { lesson_id: string; position_seconds: number; completed_at: string | null; updated_at?: string };
 type Viewer = { name: string; admin: boolean };
 type QuizQuestion = { id: string; prompt: string; choices: string[] };
 type QuizResult = { scorePct: number; passed: boolean; requiredPct: number; questionCount: number };
@@ -36,6 +36,55 @@ export function SchoolClient() {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const lastSave = useRef<Record<string, number>>({});
   const loadSeq = useRef(0);
+  const watchSession = useRef<{ lessonId: string; id: string } | null>(null);
+  const watchQueue = useRef<Promise<void>>(Promise.resolve());
+
+  function resumeLesson(course: Course): Lesson | null {
+    const lessons = sortedLessons(course);
+    const unfinished = lessons.filter(l => !progress.some(p => p.lesson_id === l.id && p.completed_at));
+    if (!unfinished.length) return null;
+    const activity = unfinished.map(l => ({ lesson:l, record: progress.find(p => p.lesson_id===l.id) }))
+      .filter(x => x.record?.updated_at).sort((a,b) => Date.parse(b.record?.updated_at ?? "")-Date.parse(a.record?.updated_at ?? ""));
+    return activity[0]?.lesson ?? unfinished[0];
+  }
+  const formatTime = (seconds:number) => Math.floor(seconds/60)+":"+String(Math.floor(seconds%60)).padStart(2,"0");
+
+  async function beginWatch(lesson: Lesson, seconds: number) {
+    try {
+      const { sessionId } = await academyRequest<{ sessionId: string }>("/api/academy/watch", {
+        method:"POST",body:JSON.stringify({lessonId:lesson.id,positionSeconds:Math.max(0,Math.floor(seconds))}),
+      });
+      if (selected?.id === lesson.id) watchSession.current={lessonId:lesson.id,id:sessionId};
+    } catch(cause) { setError(cause instanceof Error ? cause.message : "Watch session unavailable."); }
+  }
+  function reportWatch(lesson: Lesson,seconds:number,event:"tick"|"pause"|"ended"){
+    const session=watchSession.current;
+    if (!session || session.lessonId!==lesson.id) return;
+    const secondsValue=Math.min(86400,Math.max(0,Math.floor(Number.isFinite(seconds)?seconds:0)));
+    const pending=watchQueue.current;
+    const action=(async()=>{
+      await pending.catch(()=>undefined);
+      try{
+        const {watch}=await academyRequest<{watch:{completed:boolean;creditedSeconds:number;requiredSeconds:number}}>("/api/academy/watch",{
+          method:"PATCH",body:JSON.stringify({sessionId:session.id,positionSeconds:secondsValue,event}),
+        });
+        const now=new Date().toISOString();
+        setProgress(rows=>{
+          const found=rows.find(row=>row.lesson_id===lesson.id);
+          if(found)return rows.map(row=>row.lesson_id===lesson.id
+            ? {...row,position_seconds:secondsValue,updated_at:now,completed_at:row.completed_at??(watch.completed?now:null)}
+            : row);
+          return [...rows,{lesson_id:lesson.id,position_seconds:secondsValue,updated_at:now,completed_at:watch.completed?now:null}];
+        });
+        if(event==="ended"&&!watch.completed){
+          setError("Video not complete yet. Watch at normal speed; skips do not count toward certification.");
+        }
+      }catch(cause){
+        if(event!=="tick")setError(cause instanceof Error?cause.message:"Video progress could not be saved.");
+      }
+    })();
+    watchQueue.current=action;
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -66,6 +115,8 @@ export function SchoolClient() {
   async function openLesson(lesson: Lesson) {
     const seq = ++loadSeq.current;
     setSelected(lesson);
+    watchSession.current=null;
+    watchQueue.current=Promise.resolve();
     setError(null);
     setVideo(null);
     setQuizQuestions([]);
@@ -170,6 +221,9 @@ export function SchoolClient() {
   const nextIndex = selected ? lessonSequence.findIndex(lesson => lesson.id === selected.id) + 1 : 0;
   const nextLesson = lessonSequence[nextIndex] ?? null;
   const completedCount = progress.filter(p => p.completed_at).length;
+  const resumeCourse = visible.find(course => resumeLesson(course)) ?? null;
+  const resumeTarget = resumeCourse ? resumeLesson(resumeCourse) : null;
+  const resumeRecord = resumeTarget ? progress.find(p => p.lesson_id===resumeTarget.id) : null;
 
   return (
     <div className="school">
@@ -178,7 +232,7 @@ export function SchoolClient() {
         <div className="nav-label">YOUR COACHING SCHOOL</div>
         <nav>
           <a href="#courses"><BookOpen size={18} /> My Courses</a>
-          <a href="#learning"><PlayCircle size={18} /> Continue Learning</a>
+          <a href="#courses"><PlayCircle size={18} /> Continue Learning</a>
           <a href="#certificates"><Award size={18} /> Certificates</a>
           {user?.admin ? <Link href="/admin"><GraduationCap size={18} /> Academy Admin Studio</Link> : null}
         </nav>
@@ -205,6 +259,16 @@ export function SchoolClient() {
               <div><CheckCircle2 /><strong>Saved progress</strong><span>{completedCount} lesson{completedCount === 1 ? "" : "s"} completed</span></div>
               <div><GraduationCap /><strong>One coaching system</strong><span>Develop the right way</span></div>
             </div>
+            {resumeTarget ? <section className="academy-continue-card" aria-label="Continue your training">
+              <div><span className="eyebrow">PICK UP WHERE YOU LEFT OFF</span>
+                <h2>{resumeTarget.title}</h2>
+                <p>{resumeCourse?.title}{resumeRecord?.position_seconds && resumeTarget.lesson_type==="video"
+                  ? " · Resume at "+formatTime(resumeRecord.position_seconds) : ""}</p>
+              </div>
+              <button type="button" className="academy-continue-button" onClick={()=>void openLesson(resumeTarget)}>
+                <PlayCircle size={19}/> Continue Learning <ArrowRight size={16}/>
+              </button>
+            </section> : null}
             <div className="section-title" id="courses"><h2>My courses</h2></div>
             {visible.length === 0 ? <p className="notice">No courses are assigned yet. Ask an MDC Academy administrator to enroll you.</p>
               : <div className="course-grid">
@@ -216,11 +280,25 @@ export function SchoolClient() {
                     <div className="course-copy">
                       <h3>{course.title}</h3><p>{course.summary}</p>
                       <div>{done} / {lessons.length} complete <ArrowRight size={16} /></div>
+                      <div className="academy-progress-track" role="progressbar" aria-label={course.title+" progress"}
+                        aria-valuemin={0} aria-valuemax={100} aria-valuenow={lessons.length?Math.round(done/lessons.length*100):0}>
+                        <span style={{width:(lessons.length?Math.round(done/lessons.length*100):0)+"%"}}/>
+                      </div>
+                      {resumeLesson(course) ? <button type="button" className="academy-resume-course" onClick={()=>void openLesson(resumeLesson(course)!)}>
+                        <PlayCircle size={16}/> {progress.some(p=>sortedLessons(course).some(l=>l.id===p.lesson_id))?"Resume course":"Start course"}
+                      </button> : null}
                       {course.status === "published" && lessons.length > 0 && done === lessons.length && !certificates.some(cert => cert.course_id === course.id)
                         ? <button type="button" className="academy-cert-button" disabled={progressBusy} onClick={() => void issueCertificate(course.id)}><Award size={17} /> Claim completion certificate</button> : null}
                       {course.academy_modules?.slice().sort((a, b) => a.sort_order - b.sort_order).map(module =>
                         <section key={module.id}>
-                          <h4>{module.title}</h4>
+                          <div className="academy-module-heading"><h4>{module.title}</h4>
+                            <small>{module.academy_lessons.filter(l=>progress.some(p=>p.lesson_id===l.id&&p.completed_at)).length} / {module.academy_lessons.length} lessons</small>
+                          </div>
+                          <div className="academy-progress-track academy-module-track" role="progressbar" aria-label={module.title+" progress"}
+                            aria-valuemin={0} aria-valuemax={100}
+                            aria-valuenow={module.academy_lessons.length?Math.round(module.academy_lessons.filter(l=>progress.some(p=>p.lesson_id===l.id&&p.completed_at)).length/module.academy_lessons.length*100):0}>
+                            <span style={{width:(module.academy_lessons.length?Math.round(module.academy_lessons.filter(l=>progress.some(p=>p.lesson_id===l.id&&p.completed_at)).length/module.academy_lessons.length*100):0)+"%"}}/>
+                          </div>
                           {module.academy_lessons?.slice().sort((a, b) => a.sort_order - b.sort_order).map(lesson =>
                             <button type="button" className="school-lesson" key={lesson.id} onClick={() => void openLesson(lesson)}>
                               {progress.some(p => p.lesson_id === lesson.id && p.completed_at) ? <CheckCircle2 size={15} /> : <PlayCircle size={15} />}
@@ -242,15 +320,16 @@ export function SchoolClient() {
                   const duration = event.currentTarget.duration;
                   if (prior > 5 && Number.isFinite(duration) && prior < duration - 5) event.currentTarget.currentTime = prior;
                 }}
-                onTimeUpdate={event => {
-                  const seconds = Math.floor(event.currentTarget.currentTime);
-                  if (seconds > 0 && seconds - (lastSave.current[selected.id] ?? 0) >= 20) {
-                    lastSave.current[selected.id] = seconds;
-                    void saveProgress(selected, seconds, false);
+                onPlay={event=>{void beginWatch(selected,event.currentTarget.currentTime);}}
+                onTimeUpdate={event=>{
+                  const seconds=Math.floor(event.currentTarget.currentTime);
+                  if(seconds-(lastSave.current[selected.id]??0)>=12){
+                    lastSave.current[selected.id]=seconds;
+                    reportWatch(selected,seconds,"tick");
                   }
                 }}
-                onPause={event => { if (!event.currentTarget.ended) void saveProgress(selected, event.currentTarget.currentTime, false); }}
-                onEnded={event => void saveProgress(selected, event.currentTarget.duration, true)}
+                onPause={event=>{if(!event.currentTarget.ended)reportWatch(selected,event.currentTarget.currentTime,"pause");}}
+                onEnded={event=>reportWatch(selected,event.currentTarget.currentTime,"ended")}
                 onError={() => setError("Playback was interrupted. Reopen this lesson to renew your video link.")}
               /> : null}
               {selected.lesson_type === "article" ? <div className="article-copy">{selected.body || "No reading content has been added yet."}</div> : null}
