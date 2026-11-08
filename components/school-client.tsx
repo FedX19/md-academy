@@ -20,7 +20,9 @@ function sortedLessons(course: Course) {
     .flatMap(m => (m.academy_lessons ?? []).slice().sort((a, b) => a.sort_order - b.sort_order));
 }
 
-export function SchoolClient({ previewCourseId }: { previewCourseId?: string } = {}) {
+export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCourse }: {
+  previewCourseId?: string; previewLessonId?: string; previewOpenCourse?: boolean;
+} = {}) {
   const isPreview = Boolean(previewCourseId);
   const [user, setUser] = useState<Viewer | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -46,7 +48,22 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
   const previewWatched=useRef<Record<string,Array<[number,number]>>>({});
   const previewAnchor=useRef<{id:string;position:number;at:number}|null>(null);
 
+  // Draft material belongs to the isolated preview. Never send draft lesson
+  // playback or completion to the real enrolled-coach endpoints.
+  function adminDraftPreviewUrl(course:Course, lesson?:Lesson) {
+    const query=new URLSearchParams({courseId:course.id});
+    if(lesson)query.set("lessonId",lesson.id);
+    else query.set("open","course");
+    return "/admin/preview?"+query.toString();
+  }
+  function isAdminDraft(course:Course) {
+    return !isPreview && user?.admin===true && course.status!=="published";
+  }
   function openCourse(course:Course) {
+    if(isAdminDraft(course)){
+      window.location.assign(adminDraftPreviewUrl(course));
+      return;
+    }
     setError(null);setVideoIssue(null);setSelected(null);setVideo(null);setActiveCourseId(course.id);
   }
   function closeCourse() {
@@ -173,6 +190,17 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
             setCourses([response.course]);
             setProgress([]);
             setCertificates([]);
+            // Draft links from the admin's real classroom open the same coach
+            // preview directly at the selected module or lesson.
+            const requested=previewLessonId
+              ? sortedLessons(response.course).find(lesson=>lesson.id===previewLessonId)
+              : undefined;
+            if(requested){
+              setActiveCourseId(response.course.id);
+              void openLesson(requested);
+            }else if(previewOpenCourse){
+              setActiveCourseId(response.course.id);
+            }
           }
         } else {
           const [catalog, history, awards] = await Promise.all([
@@ -195,7 +223,7 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
     }
     void load();
     return () => { cancelled = true; };
-  }, [previewCourseId]);
+  }, [previewCourseId,previewLessonId,previewOpenCourse]);
 
   async function openLesson(lesson: Lesson) {
     const seq = ++loadSeq.current;
@@ -325,6 +353,10 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
   const resumeTarget = resumeCourse ? resumeLesson(resumeCourse) : null;
   const resumeRecord = resumeTarget ? progress.find(p => p.lesson_id===resumeTarget.id) : null;
   function openLessonFromCourse(lesson:Lesson, course:Course){
+    if(isAdminDraft(course)){
+      window.location.assign(adminDraftPreviewUrl(course,lesson));
+      return;
+    }
     setActiveCourseId(course.id);
     void openLesson(lesson);
   }
@@ -407,7 +439,7 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
                       <div className="academy-progress-track" role="progressbar" aria-label={course.title+" progress"} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
                         <span style={{width:pct+"%"}}/>
                       </div>
-                      <span className="academy-card-open">View modules & progress <ArrowRight size={16}/></span>
+                      <span className="academy-card-open">{isAdminDraft(course)?"Preview draft course":"View modules & progress"} <ArrowRight size={16}/></span>
                     </div>
                   </button>;
                 })}
