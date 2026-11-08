@@ -25,7 +25,7 @@ test("preview reads private draft courses, quiz questions and videos only for ed
 test("simulated preview cannot write course progress, submit real quizzes, or claim certificates", () => {
  const school = read("components/school-client.tsx");
  assert.match(school, /if \(isPreview\) \{ previewProgress\(lesson, seconds, complete\); return; \}/);
- assert.match(school, /if \(isPreview\) \{ previewProgress\(lesson,seconds,event==="ended"\); return; \}/);
+ assert.match(school, /if \(isPreview\) \{ recordPreviewWatch\(lesson,seconds,event\); return; \}/);
  assert.match(school, /if \(isPreview\) \{/);
  assert.match(school, /if \(isPreview \|\| progressBusy\) return/);
  assert.match(school, /setQuizResult\(\{ scorePct: score, passed, requiredPct: required/);
