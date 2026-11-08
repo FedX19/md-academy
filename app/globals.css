@@ -93,3 +93,51 @@
 .academy-preview-banner strong{color:#ffb47e;letter-spacing:.09em;font-size:11px}
 .academy-preview-banner a{display:inline-flex;align-items:center;gap:7px;color:#fff;text-decoration:underline;font-weight:800;white-space:nowrap}
 @media(max-width:760px){.academy-preview-banner{padding:12px 17px;font-size:11px}}
+
+/* Course cards open a scrollable course outline. Only one modal at a time. */
+html,body{overflow-x:hidden;overflow-y:auto}
+.school,.workspace{min-height:100dvh;overflow:visible}
+.academy-course-card{display:block;width:100%;padding:0;color:#f5f5f5;text-align:left;cursor:pointer;font:inherit}
+.academy-course-card:focus-visible{outline:2px solid #ff9b62;outline-offset:3px}
+.academy-course-card .course-copy>div.academy-card-meta{display:flex;justify-content:space-between;gap:9px;border:0;padding:0;margin-top:8px;color:#b8b9bf;font-size:12px}
+.academy-course-card .course-copy>div.academy-progress-track{display:block;margin:15px 0;border:0;padding:0}
+.academy-card-open{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#ff9f66;font-size:12px;font-weight:800;margin-top:12px}
+.academy-course-card .course-copy p{margin-bottom:15px;min-height:0}
+.academy-course-dialog{box-sizing:border-box;width:min(90vw,820px);max-width:none;max-height:calc(100dvh - 26px);padding:0;color:#f6f6f6;background:#121418;border:1px solid #414046;border-radius:18px;box-shadow:0 24px 100px #000c;overflow:hidden;overscroll-behavior:contain}
+.academy-course-dialog[open]{display:flex;flex-direction:column}
+.academy-course-dialog.academy-dialog-player{width:min(96vw,1190px)}
+.academy-course-dialog::backdrop{background:rgba(2,3,5,.87);backdrop-filter:blur(5px)}
+.academy-modal-header{display:flex;justify-content:space-between;gap:15px;align-items:flex-start;padding:21px 26px 18px;border-bottom:1px solid #35343b;flex:none}
+.academy-modal-header-main{min-width:0}.academy-modal-header h2{font-size:clamp(18px,2.5vw,27px);margin:8px 0 6px;overflow-wrap:anywhere}
+.academy-modal-header p{font-size:12px;color:#a7a9b1;line-height:1.6}
+.academy-modal-back{display:inline-flex;align-items:center;gap:8px;color:#ffa46e;border:0;background:none;padding:0;font-size:12px;font-weight:800}
+.academy-modal-close{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;flex:none;background:#292a30;border:1px solid #494a50;color:#fff}
+.academy-modal-scroll{overflow-y:auto;overflow-x:hidden;min-height:0;flex:1;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable;padding:22px 26px 29px}
+.academy-modal-scroll:focus-visible,.academy-course-dialog button:focus-visible{outline:2px solid #f66921;outline-offset:2px}
+.academy-overall-progress{padding:18px 19px;background:#221c19;border:1px solid #5a3929;border-radius:12px;margin-bottom:20px}
+.academy-overall-header{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px}
+.academy-overall-progress small{color:#a6a7b0;font-size:11px}
+.academy-overall-progress .academy-progress-track{margin:13px 0 10px}
+.academy-module-panel{padding:19px;border:1px solid #34373d;border-radius:13px;background:#181a1e;margin-bottom:14px}
+.academy-module-head{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}
+.academy-module-head h3{font-size:17px;margin:7px 0}
+.academy-module-head p{font-size:11px;color:#a8aab1}
+.academy-module-start{background:#f66921;color:#1a0b03;display:inline-flex;align-items:center;gap:8px;border:0;border-radius:9px;padding:12px 14px;font-size:12px;font-weight:900}
+.academy-module-panel .academy-module-track{margin:15px 0}
+.academy-module-lessons{display:grid;gap:7px}
+.academy-lesson-link{width:100%;display:flex;align-items:center;gap:13px;background:#101215;color:#f0f1f3;border:1px solid #34363a;border-radius:10px;padding:12px 14px;text-align:left}
+.academy-lesson-link>span{flex:1;min-width:0;display:grid;gap:5px}.academy-lesson-link strong{font-size:13px}.academy-lesson-link small{font-size:11px;color:#a5a5ae}
+.academy-lesson-link svg{flex:none;color:#f66921}.academy-lesson-link svg.academy-lesson-done{color:#64c68a}
+.academy-lesson-link:hover,.academy-lesson-link:focus-visible{border-color:#f66921;background:#241b16}
+.academy-player-modal{border:0;background:transparent;margin:0;padding:0}
+.academy-player-modal>h2{font-size:21px}
+.academy-dialog-player .academy-player video{width:100%;max-height:min(69dvh,700px);aspect-ratio:16/9;object-fit:contain;display:block;background:#000}
+.academy-watch-rule{display:flex;align-items:flex-start;gap:9px;color:#e2b69c!important;font-size:12px!important;background:#2a1b14;border:1px solid #4f3528;border-radius:10px;padding:11px 13px}
+.academy-watch-rule svg{flex:none;color:#f66921}
+.academy-back-lessons{background:#22252a;color:#e4e5e8;border:1px solid #494a50;border-radius:8px;padding:12px 15px;font-size:12px}
+@media(max-width:760px){
+ .academy-course-dialog,.academy-course-dialog.academy-dialog-player{width:calc(100vw - 12px);max-height:calc(100dvh - 12px);border-radius:12px}
+ .academy-modal-header{padding:14px 15px}.academy-modal-scroll{padding:15px}
+ .academy-module-panel{padding:14px}.academy-module-start{width:100%;justify-content:center}
+ .academy-dialog-player .academy-player video{max-height:53dvh}
+}

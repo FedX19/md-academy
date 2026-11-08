@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { BookOpen, PlayCircle, CheckCircle2, ArrowRight, ShieldCheck, GraduationCap, LoaderCircle, LockKeyhole, Award } from "lucide-react";
+import { BookOpen, PlayCircle, CheckCircle2, ArrowRight, ArrowLeft, ShieldCheck, GraduationCap, LoaderCircle, LockKeyhole, Award, X, Clock3 } from "lucide-react";
 import { academyRequest, browserAcademyClient } from "@/lib/academy-client";
 
 type Lesson = { id: string; title: string; summary: string; body: string; lesson_type: "video" | "article" | "quiz"; duration_seconds: number; sort_order: number };
@@ -26,6 +26,9 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
   const [courses, setCourses] = useState<Course[]>([]);
   const [progress, setProgress] = useState<Progress[]>([]);
   const [selected, setSelected] = useState<Lesson | null>(null);
+  const [activeCourseId,setActiveCourseId]=useState<string|null>(null);
+  const dialogRef=useRef<HTMLDialogElement|null>(null);
+  const playerRef=useRef<HTMLVideoElement|null>(null);
   const [video, setVideo] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingVideo, setLoadingVideo] = useState(false);
@@ -39,6 +42,49 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
   const loadSeq = useRef(0);
   const watchSession = useRef<{ lessonId: string; id: string } | null>(null);
   const watchQueue = useRef<Promise<void>>(Promise.resolve());
+  const previewWatched=useRef<Record<string,Array<[number,number]>>>({});
+  const previewAnchor=useRef<{id:string;position:number;at:number}|null>(null);
+
+  function openCourse(course:Course) {
+    setError(null); setSelected(null); setVideo(null); setActiveCourseId(course.id);
+  }
+  function closeCourse() {
+    // Pause before unmounting so the final legitimate watch segment is saved.
+    if(playerRef.current && !playerRef.current.paused) playerRef.current.pause();
+    setActiveCourseId(null); setSelected(null); setVideo(null);
+    setError(null); watchSession.current=null;
+  }
+  useEffect(()=>{
+    const dialog=dialogRef.current;
+    if(!dialog || !activeCourseId)return;
+    if(!dialog.open)dialog.showModal();
+    const prior=document.body.style.overflow;
+    document.body.style.overflow="hidden";
+    return ()=>{document.body.style.overflow=prior;if(dialog.open)dialog.close();};
+  },[activeCourseId]);
+
+  function recordPreviewWatch(lesson:Lesson, seconds:number,event:"tick"|"pause"|"ended"|"seek"){
+    const now=Date.now(),position=Math.max(0,Math.floor(seconds));
+    const prev=previewAnchor.current;
+    if(event!=="seek" && prev?.id===lesson.id){
+      const elapsed=(now-prev.at)/1000, moved=position-prev.position;
+      if(elapsed>=1.5 && elapsed<=45 && moved>0 && moved<=elapsed+2){
+        previewWatched.current[lesson.id]??=[];
+        previewWatched.current[lesson.id].push([prev.position,Math.min(position,lesson.duration_seconds)]);
+      }
+    }
+    previewAnchor.current={id:lesson.id,position,at:now};
+    if(event==="seek")return;
+    const sorted=[...(previewWatched.current[lesson.id]??[])].sort((a,b)=>a[0]-b[0]);
+    let edge=0;
+    for(const [start,end] of sorted){
+      if(start>edge)break;
+      edge=Math.max(edge,end);
+    }
+    const complete=event==="ended" && position>=lesson.duration_seconds-2 && edge>=lesson.duration_seconds-2;
+    previewProgress(lesson,position,complete);
+    if(event==="ended"&&!complete)setError("This video has unwatched sections. Watch from the start through the end to finish.");
+  }
 
   // Preview state is intentionally memory-only. Never call progress, quiz grading,
   // enrollment, video-watch or certificate write endpoints in this mode.
@@ -72,8 +118,8 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
       if (selected?.id === lesson.id) watchSession.current={lessonId:lesson.id,id:sessionId};
     } catch(cause) { setError(cause instanceof Error ? cause.message : "Watch session unavailable."); }
   }
-  function reportWatch(lesson: Lesson,seconds:number,event:"tick"|"pause"|"ended"){
-    if (isPreview) { previewProgress(lesson,seconds,event==="ended"); return; }
+  function reportWatch(lesson: Lesson,seconds:number,event:"tick"|"pause"|"ended"|"seek"){
+    if (isPreview) { recordPreviewWatch(lesson,seconds,event); return; }
     const session=watchSession.current;
     if (!session || session.lessonId!==lesson.id) return;
     const secondsValue=Math.min(86400,Math.max(0,Math.floor(Number.isFinite(seconds)?seconds:0)));
@@ -142,7 +188,9 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
 
   async function openLesson(lesson: Lesson) {
     const seq = ++loadSeq.current;
+    if(playerRef.current && !playerRef.current.paused)playerRef.current.pause();
     setSelected(lesson);
+    previewAnchor.current=null;
     watchSession.current=null;
     watchQueue.current=Promise.resolve();
     setError(null);
@@ -255,6 +303,7 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
   }
 
   const visible = isPreview ? courses : courses.filter(course => course.status === "published" || user?.admin);
+  const activeCourse=visible.find(course=>course.id===activeCourseId)??null;
   const selectedCourse = selected ? visible.find(course => sortedLessons(course).some(lesson => lesson.id === selected.id)) : null;
   const lessonSequence = selectedCourse ? sortedLessons(selectedCourse) : [];
   const nextIndex = selected ? lessonSequence.findIndex(lesson => lesson.id === selected.id) + 1 : 0;
@@ -263,6 +312,19 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
   const resumeCourse = visible.find(course => resumeLesson(course)) ?? null;
   const resumeTarget = resumeCourse ? resumeLesson(resumeCourse) : null;
   const resumeRecord = resumeTarget ? progress.find(p => p.lesson_id===resumeTarget.id) : null;
+  function openLessonFromCourse(lesson:Lesson, course:Course){
+    setActiveCourseId(course.id);
+    void openLesson(lesson);
+  }
+  function moduleProgress(module:Module){
+    const total=module.academy_lessons?.length??0;
+    const done=(module.academy_lessons??[]).filter(l=>progress.some(p=>p.lesson_id===l.id&&p.completed_at)).length;
+    return {done,total,percent:total?Math.round(done*100/total):0};
+  }
+  function nextInModule(module:Module){
+    const ordered=(module.academy_lessons??[]).slice().sort((a,b)=>a.sort_order-b.sort_order);
+    return ordered.find(l=>!progress.some(p=>p.lesson_id===l.id&&p.completed_at))??ordered[0]??null;
+  }
 
   return (
     <div className="school">
@@ -308,69 +370,120 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
                 <p>{resumeCourse?.title}{resumeRecord?.position_seconds && resumeTarget.lesson_type==="video"
                   ? " · Resume at "+formatTime(resumeRecord.position_seconds) : ""}</p>
               </div>
-              <button type="button" className="academy-continue-button" onClick={()=>void openLesson(resumeTarget)}>
+              <button type="button" className="academy-continue-button" onClick={()=>{if(resumeCourse)openLessonFromCourse(resumeTarget,resumeCourse);}}>
                 <PlayCircle size={19}/> Continue Learning <ArrowRight size={16}/>
               </button>
             </section> : null}
             <div className="section-title" id="courses"><h2>My courses</h2></div>
             {visible.length === 0 ? <p className="notice">No courses are assigned yet. Ask an MDC Academy administrator to enroll you.</p>
               : <div className="course-grid">
-                {visible.map(course => {
-                  const lessons = sortedLessons(course);
-                  const done = lessons.filter(l => progress.some(p => p.lesson_id === l.id && p.completed_at)).length;
-                  return <div className="course" key={course.id}>
-                    <div className="course-art"><span>MD</span><small>{isPreview ? "COACH TRAINING" : course.status.toUpperCase()}</small></div>
+                {visible.map(course=>{
+                  const lessons=sortedLessons(course);
+                  const done=lessons.filter(l=>progress.some(p=>p.lesson_id===l.id&&p.completed_at)).length;
+                  const pct=lessons.length?Math.round(done/lessons.length*100):0;
+                  return <button key={course.id} type="button" className="course academy-course-card"
+                    onClick={()=>openCourse(course)} aria-label={"Open "+course.title+" course and module progress"}>
+                    <div className="course-art"><span>MD</span><small>{isPreview?"COACH TRAINING":course.status.toUpperCase()}</small></div>
                     <div className="course-copy">
                       <h3>{course.title}</h3><p>{course.summary}</p>
-                      <div>{done} / {lessons.length} complete <ArrowRight size={16} /></div>
-                      <div className="academy-progress-track" role="progressbar" aria-label={course.title+" progress"}
-                        aria-valuemin={0} aria-valuemax={100} aria-valuenow={lessons.length?Math.round(done/lessons.length*100):0}>
-                        <span style={{width:(lessons.length?Math.round(done/lessons.length*100):0)+"%"}}/>
+                      <div className="academy-card-meta"><span>{course.academy_modules?.length??0} modules</span><span>{done} / {lessons.length} lessons</span></div>
+                      <div className="academy-progress-track" role="progressbar" aria-label={course.title+" progress"} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
+                        <span style={{width:pct+"%"}}/>
                       </div>
-                      {resumeLesson(course) ? <button type="button" className="academy-resume-course" onClick={()=>void openLesson(resumeLesson(course)!)}>
-                        <PlayCircle size={16}/> {progress.some(p=>sortedLessons(course).some(l=>l.id===p.lesson_id))?"Resume course":"Start course"}
-                      </button> : null}
-                      {!isPreview && course.status === "published" && lessons.length > 0 && done === lessons.length && !certificates.some(cert => cert.course_id === course.id)
-                        ? <button type="button" className="academy-cert-button" disabled={progressBusy} onClick={() => void issueCertificate(course.id)}><Award size={17} /> Claim completion certificate</button> : null}
-                      {course.academy_modules?.slice().sort((a, b) => a.sort_order - b.sort_order).map(module =>
-                        <section key={module.id}>
-                          <div className="academy-module-heading"><h4>{module.title}</h4>
-                            <small>{module.academy_lessons.filter(l=>progress.some(p=>p.lesson_id===l.id&&p.completed_at)).length} / {module.academy_lessons.length} lessons</small>
-                          </div>
-                          <div className="academy-progress-track academy-module-track" role="progressbar" aria-label={module.title+" progress"}
-                            aria-valuemin={0} aria-valuemax={100}
-                            aria-valuenow={module.academy_lessons.length?Math.round(module.academy_lessons.filter(l=>progress.some(p=>p.lesson_id===l.id&&p.completed_at)).length/module.academy_lessons.length*100):0}>
-                            <span style={{width:(module.academy_lessons.length?Math.round(module.academy_lessons.filter(l=>progress.some(p=>p.lesson_id===l.id&&p.completed_at)).length/module.academy_lessons.length*100):0)+"%"}}/>
-                          </div>
-                          {module.academy_lessons?.slice().sort((a, b) => a.sort_order - b.sort_order).map(lesson =>
-                            <button type="button" className="school-lesson" key={lesson.id} onClick={() => void openLesson(lesson)}>
-                              {progress.some(p => p.lesson_id === lesson.id && p.completed_at) ? <CheckCircle2 size={15} /> : <PlayCircle size={15} />}
-                              {lesson.title}
-                            </button>)}
-                        </section>)}
+                      <span className="academy-card-open">View modules & progress <ArrowRight size={16}/></span>
                     </div>
-                  </div>;
+                  </button>;
                 })}
               </div>}
-            {selected ? <section className="academy-player" id="learning">
-              <span className="eyebrow">NOW LEARNING</span>
+            <dialog ref={dialogRef} className={"academy-course-dialog"+(selected?" academy-dialog-player":"")}
+              aria-label={selected ? selected.title+" lesson" : activeCourse?.title+" course modules"}
+              onCancel={event=>{event.preventDefault();closeCourse();}}
+              onClick={event=>{if(event.target===event.currentTarget)closeCourse();}}>
+              {activeCourse ? <>
+                <div className="academy-modal-header">
+                  <div className="academy-modal-header-main">
+                    {selected ? <button type="button" className="academy-modal-back" onClick={()=>{
+                      if(playerRef.current&&!playerRef.current.paused)playerRef.current.pause();
+                      setSelected(null);setVideo(null);setError(null);
+                    }}><ArrowLeft size={18}/> All modules</button>
+                      : <span className="eyebrow">YOUR COURSE</span>}
+                    <h2>{selected?selected.title:activeCourse.title}</h2>
+                    {!selected ? <p>{activeCourse.summary}</p> : null}
+                  </div>
+                  <button type="button" className="academy-modal-close" onClick={closeCourse} aria-label="Close course window"><X size={22}/></button>
+                </div>
+                <div className="academy-modal-scroll" key={selected?.id??"course"}>
+                  {!selected ? <div className="academy-course-overview">
+                    <div className="academy-overall-progress">
+                      <div className="academy-overall-header">
+                        <strong>Course Progress</strong>
+                        <strong>{sortedLessons(activeCourse).filter(l=>progress.some(p=>p.lesson_id===l.id&&p.completed_at)).length} / {sortedLessons(activeCourse).length} lessons</strong>
+                      </div>
+                      <div className="academy-progress-track"><span style={{width:(sortedLessons(activeCourse).length?Math.round(100*sortedLessons(activeCourse).filter(l=>progress.some(p=>p.lesson_id===l.id&&p.completed_at)).length/sortedLessons(activeCourse).length):0)+"%"}}/></div>
+                      <small>Completed lessons are saved automatically when you meet the lesson requirements.</small>
+                    </div>
+                    {(activeCourse.academy_modules??[]).slice().sort((a,b)=>a.sort_order-b.sort_order).map((module,index)=>{
+                      const tally=moduleProgress(module);
+                      const first=nextInModule(module);
+                      return <section className="academy-module-panel" key={module.id}>
+                        <div className="academy-module-head">
+                          <div><span className="eyebrow">MODULE {index+1}</span><h3>{module.title}</h3>
+                            <p>{tally.done} of {tally.total} lessons completed</p></div>
+                          <button type="button" className="academy-module-start" disabled={!first}
+                            onClick={()=>{if(first)openLessonFromCourse(first,activeCourse);}}>
+                            <PlayCircle size={17}/>{tally.done?"Continue module":"Start module"}<ArrowRight size={15}/>
+                          </button>
+                        </div>
+                        <div className="academy-progress-track academy-module-track" role="progressbar" aria-label={module.title+" progress"} aria-valuemin={0} aria-valuemax={100} aria-valuenow={tally.percent}>
+                          <span style={{width:tally.percent+"%"}}/>
+                        </div>
+                        <div className="academy-module-lessons">
+                          {(module.academy_lessons??[]).slice().sort((a,b)=>a.sort_order-b.sort_order).map(lesson=>{
+                            const done=progress.some(p=>p.lesson_id===lesson.id&&p.completed_at);
+                            const saved=progress.find(p=>p.lesson_id===lesson.id)?.position_seconds??0;
+                            return <button key={lesson.id} type="button" className="academy-lesson-link"
+                              onClick={()=>openLessonFromCourse(lesson,activeCourse)}>
+                              {done?<CheckCircle2 size={19} className="academy-lesson-done"/>:<PlayCircle size={19}/>}
+                              <span><strong>{lesson.title}</strong><small>{done?"Completed":saved>5&&lesson.lesson_type==="video"?"Resume at "+formatTime(saved):lesson.lesson_type==="video"?"Video lesson":lesson.lesson_type==="quiz"?"Knowledge check":"Reading lesson"}</small></span>
+                              {lesson.lesson_type==="video"&&<Clock3 size={15}/>}
+                              <ArrowRight size={16}/>
+                            </button>;
+                          })}
+                        </div>
+                      </section>;
+                    })}
+                    {!isPreview&&activeCourse.status==="published"&&sortedLessons(activeCourse).length>0&&sortedLessons(activeCourse).every(l=>progress.some(p=>p.lesson_id===l.id&&p.completed_at))&&!certificates.some(cert=>cert.course_id===activeCourse.id)
+                      ? <button type="button" className="academy-cert-button" disabled={progressBusy} onClick={()=>void issueCertificate(activeCourse.id)}><Award size={17}/> Claim completion certificate</button> : null}
+                  </div> : null}
+                  {selected ? <section className="academy-player academy-player-modal" id="learning">
+              <span className="eyebrow">MODULE LESSON · {selected.lesson_type.toUpperCase()}</span>
               <h2>{selected.title}</h2><p>{selected.summary}</p>
+              {selected.lesson_type==="video" ? <p className="academy-watch-rule"><ShieldCheck size={15}/> Complete the entire video at normal speed. Skipped portions do not earn credit, and progress is saved to your account.</p> : null}
               {loadingVideo ? <div role="status" className="player-placeholder">Loading your video…</div> : null}
               {video && selected.lesson_type === "video" ? <video
-                key={selected.id} controls playsInline preload="metadata" src={video}
+                ref={playerRef} key={selected.id} controls playsInline preload="metadata" src={video}
                 onLoadedMetadata={event => {
                   const prior = progress.find(p => p.lesson_id === selected.id)?.position_seconds ?? 0;
                   const duration = event.currentTarget.duration;
                   if (prior > 5 && Number.isFinite(duration) && prior < duration - 5) event.currentTarget.currentTime = prior;
                 }}
-                onPlay={event=>{void beginWatch(selected,event.currentTarget.currentTime);}}
+                onPlay={event=>{
+                  lastSave.current[selected.id]=Math.floor(event.currentTarget.currentTime);
+                  if(isPreview)previewAnchor.current={id:selected.id,position:Math.floor(event.currentTarget.currentTime),at:Date.now()};
+                  else void beginWatch(selected,event.currentTarget.currentTime);
+                }}
                 onTimeUpdate={event=>{
                   const seconds=Math.floor(event.currentTarget.currentTime);
-                  if(seconds-(lastSave.current[selected.id]??0)>=12){
+                  if(seconds-(lastSave.current[selected.id]??0)>=5){
                     lastSave.current[selected.id]=seconds;
                     reportWatch(selected,seconds,"tick");
                   }
                 }}
+                onSeeking={event=>{
+                  lastSave.current[selected.id]=Math.floor(event.currentTarget.currentTime);
+                }}
+                onSeeked={event=>reportWatch(selected,event.currentTarget.currentTime,"seek")}
+                onRateChange={event=>{if(event.currentTarget.playbackRate>1)event.currentTarget.playbackRate=1;}}
                 onPause={event=>{if(!event.currentTarget.ended)reportWatch(selected,event.currentTarget.currentTime,"pause");}}
                 onEnded={event=>reportWatch(selected,event.currentTarget.currentTime,"ended")}
                 onError={() => setError("Playback was interrupted. Reopen this lesson to renew your video link.")}
@@ -403,8 +516,15 @@ export function SchoolClient({ previewCourseId }: { previewCourseId?: string } =
               <div className="academy-player-actions">
                 {selected.lesson_type === "article" ? <button type="button" className="button" disabled={progressBusy} onClick={() => void saveProgress(selected, 0, true)}>Mark reading complete</button> : null}
                 {nextLesson ? <button type="button" className="button" onClick={() => void openLesson(nextLesson)}>Next lesson <ArrowRight size={16} /></button> : null}
+                <button type="button" className="academy-back-lessons" onClick={()=>{
+                  if(playerRef.current&&!playerRef.current.paused)playerRef.current.pause();
+                  setSelected(null);setVideo(null);setError(null);
+                }}>Back to course modules</button>
               </div>
             </section> : null}
+                </div>
+              </> : null}
+            </dialog>
             <section id="certificates" className="academy-certificates">
               <div className="section-title"><h2>My certificates</h2></div>
               {certificates.length === 0 ? <p>No completion certificates yet. Complete your lessons and required assessments to earn one.</p>
