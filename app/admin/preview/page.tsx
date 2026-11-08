@@ -6,8 +6,10 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 export default async function AcademyCoachPreview({ searchParams }: {
-  searchParams: Promise<{ courseId?: string }>
+  searchParams: Promise<{ courseId?: string; lessonId?: string; open?: string }>
 }) {
   const params = await searchParams;
-  return <SchoolClient previewCourseId={params.courseId ?? ""}/>;
+  return <SchoolClient previewCourseId={params.courseId ?? ""}
+    previewLessonId={params.lessonId}
+    previewOpenCourse={params.open==="course"}/>;
 }

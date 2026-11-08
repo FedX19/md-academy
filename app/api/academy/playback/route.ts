@@ -10,7 +10,12 @@ export async function POST(request:Request){
  const moduleRow=lesson.academy_modules as unknown as {course_id:string}|null;
  if(!moduleRow)return Response.json({error:"Video unavailable."},{status:404,headers:privateHeaders});
  const {data:course}=await user.client.from("academy_courses").select("id,status").eq("id",moduleRow.course_id).maybeSingle();
- if(!course||course.status!=="published")return Response.json({error:"Course unavailable."},{status:403,headers:privateHeaders});
+ if(!course)return Response.json({error:"Course unavailable."},{status:403,headers:privateHeaders});
+ if(course.status!=="published")return Response.json({
+  error:user.author
+    ?"Draft lessons must be opened through Preview as League Coach. No publication is required."
+    :"Course unavailable."
+ },{status:403,headers:privateHeaders});
  const {data:enrollment}=await user.client.from("academy_enrollments").select("id").eq("course_id",moduleRow.course_id).eq("user_id",user.id).eq("status","active").maybeSingle();
  if(!user.admin&&!enrollment)return Response.json({error:"Enrollment required."},{status:403,headers:privateHeaders});
  const {data:asset}=await user.client.from("academy_media_assets").select("storage_path").eq("id",lesson.media_asset_id).maybeSingle();
