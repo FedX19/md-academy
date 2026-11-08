@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, BookOpen, Check, ChevronDown, ChevronRight, CirclePlus, ClipboardList, FileText, GraduationCap, LayoutDashboard, LibraryBig, LoaderCircle, LockKeyhole, Pencil, Plus, Save, ShieldCheck, Trash2, UploadCloud, Users, Video, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Check, ChevronDown, ChevronRight, CirclePlus, ClipboardList, FileText, GraduationCap, LayoutDashboard, LibraryBig, LoaderCircle, LockKeyhole, LogOut, Menu, Pencil, Plus, Save, ShieldCheck, Trash2, UploadCloud, Users, Video, X } from "lucide-react";
 import { academyRequest, browserAcademyClient } from "@/lib/academy-client";
 
 type CourseStatus = "draft" | "review" | "published" | "archived";
@@ -84,6 +84,9 @@ export function AdminStudio(){
  const [access,setAccess]=useState<"loading"|"allowed"|"denied">("loading");
  const [courses,setCourses]=useState<Course[]>([]);
  const [view,setView]=useState<View>("overview");
+ const [mobileMenuOpen,setMobileMenuOpen]=useState(false);
+ const [mobileOutlineOpen,setMobileOutlineOpen]=useState(true);
+ const mobileMenuButton=useRef<HTMLButtonElement|null>(null);
  const [courseId,setCourseId]=useState<string|null>(null);
  const [moduleId,setModuleId]=useState<string|null>(null);
  const [lessonId,setLessonId]=useState<string|null>(null);
@@ -118,6 +121,30 @@ export function AdminStudio(){
  const selectedLesson=selectedModule?.academy_lessons?.find(lesson=>lesson.id===lessonId)??null;
  const readOnly=selectedCourse?.status==="published"||selectedCourse?.status==="archived";
  const publishedCourses=courses.filter(course=>course.status==="published");
+ const continueBuilding=courses.find(course=>course.status==="draft")??courses.find(course=>course.status==="review")??null;
+
+ useEffect(()=>{
+  if(!mobileMenuOpen)return;
+  const onEscape=(event:KeyboardEvent)=>{
+   if(event.key==="Escape"){event.preventDefault();setMobileMenuOpen(false);mobileMenuButton.current?.focus();}
+  };
+  window.addEventListener("keydown",onEscape);
+  return()=>window.removeEventListener("keydown",onEscape);
+ },[mobileMenuOpen]);
+
+ function showMobileEditor(){
+  if(typeof window==="undefined"||!window.matchMedia("(max-width:850px)").matches)return;
+  setMobileOutlineOpen(false);
+  requestAnimationFrame(()=>document.getElementById("studio-editor-focus")?.scrollIntoView({behavior:"smooth",block:"start"}));
+ }
+ function navigateMobile(target:View){
+  setMobileMenuOpen(false);
+  if(target==="overview")exitToOverview();
+  else if(target==="coaches")showCoaches();
+  else if(selectedCourse){setView("curriculum");setMobileOutlineOpen(true);}
+  else exitToOverview();
+  window.scrollTo({top:0,behavior:"smooth"});
+ }
 
  useEffect(()=>{
   let active=true;
@@ -153,15 +180,18 @@ export function AdminStudio(){
   finally{setWorking(false);setLoadingMessage("");}
  }
  function openCourse(course:Course){
+  setMobileMenuOpen(false);setMobileOutlineOpen(true);
   setCourseId(course.id);setModuleId(null);setLessonId(null);
   setCourseDraft({title:course.title,slug:course.slug,summary:course.summary,audience:course.audience});
   setView("curriculum");setError("");setNotice("");
  }
  function openModule(module:Module){
+  showMobileEditor();
   setModuleId(module.id);setLessonId(null);setModuleTitle(module.title);
   setUploadFile(null);setQuestions([]);setError("");setNotice("");
  }
  async function openLesson(lesson:Lesson,module:Module){
+  showMobileEditor();
   setModuleId(module.id);setModuleTitle(module.title);setLessonId(lesson.id);
   setLessonDraft({title:lesson.title,summary:lesson.summary,body:lesson.body??"",duration:Math.max(1,Math.ceil(lesson.duration_seconds/60)||5)});
   setUploadFile(null);setUploadStatus("");setError("");setNotice("");
@@ -190,9 +220,11 @@ export function AdminStudio(){
   setQuestions(result.questions??[]);
  }
  function exitToOverview(){
+  setMobileOutlineOpen(true);setMobileMenuOpen(false);
   setView("overview");setCourseId(null);setModuleId(null);setLessonId(null);setError("");setNotice("");
  }
  function showCoaches(){
+  setMobileMenuOpen(false);
   setView("coaches");setLessonId(null);setError("");setNotice("");
   if(selectedCourse?.status==="published")setCoachCourseId(selectedCourse.id);
  }
@@ -208,6 +240,7 @@ export function AdminStudio(){
    });
    await reload();
    setCourseId(course.id);setModuleId(null);setLessonId(null);
+   setMobileOutlineOpen(true);
    setCourseDraft({...creatingCourse,slug:creatingCourse.slug||slugify(creatingCourse.title)});
    setCreatingCourse(emptyCourse);setShowNewCourse(false);setView("curriculum");
   },"Course created as a private draft. Add your first module.");
@@ -388,7 +421,39 @@ export function AdminStudio(){
   <div className="studio-main">
    <header className="studio-topbar">
     <div className="studio-topbar-breadcrumb">MODERN DAY COACH <span>/</span> <strong>ACADEMY ADMIN STUDIO</strong></div>
+    <Link className="studio-mobile-brand" href="/admin" aria-label="MD Academy Admin Studio"
+      onClick={event=>{if(view!=="overview"){event.preventDefault();exitToOverview();window.scrollTo({top:0,behavior:"smooth"});}}}>
+      <Image src="/brand/md-academy.svg" alt="MD Academy" width={115} height={100} priority/>
+    </Link>
     <div className="studio-topbar-actions"><span className="studio-user-role">{viewer?.publisher?"Administrator":"Course Editor"}</span><button type="button" onClick={()=>void signOut()}>Sign out</button></div>
+    <button type="button" className="studio-mobile-menu-toggle" ref={mobileMenuButton}
+      aria-label={mobileMenuOpen?"Close Admin Studio menu":"Open Admin Studio menu"}
+      aria-expanded={mobileMenuOpen} aria-controls="studio-mobile-menu"
+      onClick={()=>setMobileMenuOpen(value=>!value)}>
+      {mobileMenuOpen?<X size={24} aria-hidden="true"/>:<Menu size={24} aria-hidden="true"/>}
+    </button>
+    {mobileMenuOpen ? <>
+      <button type="button" className="studio-mobile-menu-scrim" tabIndex={-1}
+        aria-label="Close Admin Studio navigation" onClick={()=>setMobileMenuOpen(false)}/>
+      <nav id="studio-mobile-menu" className="studio-mobile-menu" aria-label="Admin Studio mobile navigation">
+        <span className="studio-mobile-menu-title">ACADEMY MANAGEMENT</span>
+        <button type="button" className={view==="overview"?"active":""} onClick={()=>navigateMobile("overview")}>
+          <LayoutDashboard size={18}/> Courses & Overview <ArrowRight size={15} className="studio-menu-arrow"/>
+        </button>
+        <button type="button" className={view==="curriculum"?"active":""} onClick={()=>navigateMobile("curriculum")}>
+          <BookOpen size={18}/> Curriculum Builder <ArrowRight size={15} className="studio-menu-arrow"/>
+        </button>
+        {viewer?.publisher ? <button type="button" className={view==="coaches"?"active":""} onClick={()=>navigateMobile("coaches")}>
+          <Users size={18}/> Coach Assignments <ArrowRight size={15} className="studio-menu-arrow"/>
+        </button> : null}
+        <Link href="/school" onClick={()=>setMobileMenuOpen(false)}>
+          <GraduationCap size={18}/> View Coach Classroom <ArrowRight size={15} className="studio-menu-arrow"/>
+        </Link>
+        <button type="button" className="studio-mobile-signout" onClick={()=>{setMobileMenuOpen(false);void signOut();}}>
+          <LogOut size={18}/> Sign Out
+        </button>
+      </nav>
+    </> : null}
    </header>
    <main className="studio-content">
     {view==="overview"?<>
@@ -397,6 +462,14 @@ export function AdminStudio(){
       <p>Create courses, structure modules, add lessons and assessments, then publish when everything is ready.</p></div>
       <button className="studio-primary" type="button" onClick={()=>setShowNewCourse(x=>!x)}><Plus size={19}/> New Course</button>
      </div>
+     {continueBuilding ? <section className="studio-mobile-resume" aria-label="Continue building curriculum">
+      <div className="studio-eyebrow">PICK UP WHERE YOU LEFT OFF</div>
+      <h2>{continueBuilding.title}</h2>
+      <p>{ordered(continueBuilding.academy_modules).length} modules · {countLessons(continueBuilding)} lessons · {statusName(continueBuilding.status)}</p>
+      <button className="studio-primary" type="button" onClick={()=>openCourse(continueBuilding)}>
+        <Pencil size={17}/> Continue Building <ArrowRight size={16}/>
+      </button>
+     </section> : null}
      <div className="studio-stats">
       <div><BookOpen size={20}/><strong>{courses.length}</strong><span>Courses created</span></div>
       <div><FileText size={20}/><strong>{courses.filter(c=>c.status!=="published").length}</strong><span>Drafts & reviews</span></div>
@@ -433,9 +506,15 @@ export function AdminStudio(){
      </div>
      {readOnly?<div className="studio-inline-warning"><LockKeyhole size={17}/> Published curriculum is locked to preserve coach progress and certifications. New revisions will need a separate draft.</div>:null}
      <div className="studio-editor-layout">
-      <aside className="studio-outline">
+      <button className="studio-mobile-outline-toggle" type="button"
+        aria-expanded={mobileOutlineOpen} aria-controls="studio-course-outline"
+        onClick={()=>setMobileOutlineOpen(value=>!value)}>
+        <BookOpen size={18}/> {mobileOutlineOpen?"Hide Course Structure":"Change Module or Lesson"}
+        <ChevronDown size={16} className={mobileOutlineOpen?"":"studio-outline-caret-closed"}/>
+      </button>
+      <aside id="studio-course-outline" className={"studio-outline "+(mobileOutlineOpen?"studio-outline-open":"studio-outline-collapsed")}>
        <div className="studio-outline-head"><h2>Course Structure</h2><span>{selectedCourse.academy_modules?.length??0} modules</span></div>
-       <button type="button" className={"studio-outline-course "+(!moduleId?"chosen":"")} onClick={()=>{setModuleId(null);setLessonId(null);}}><ClipboardList size={17}/> Course Details</button>
+       <button type="button" className={"studio-outline-course "+(!moduleId?"chosen":"")} onClick={()=>{showMobileEditor();setModuleId(null);setLessonId(null);}}><ClipboardList size={17}/> Course Details</button>
        {ordered(selectedCourse.academy_modules).map((module,index)=><div className="studio-module" key={module.id}>
         <button type="button" className={"studio-module-button "+(moduleId===module.id&&!lessonId?"chosen":"")} onClick={()=>openModule(module)}>
          <span className="studio-module-number">{index+1}</span><strong>{module.title}</strong><ChevronDown size={14}/></button>
@@ -449,7 +528,7 @@ export function AdminStudio(){
         <button className="studio-secondary" type="submit" disabled={working}><Plus size={15}/> Add Module</button>
        </form>:null}
       </aside>
-      <div className="studio-editor-panel">
+      <div id="studio-editor-focus" className="studio-editor-panel">
        {!selectedModule?<section className="studio-panel">
         <div className="studio-section-title"><div><span className="studio-eyebrow">COURSE SETUP</span><h2>Course Details</h2><p>Define what this training teaches before building its lessons.</p></div></div>
         <form onSubmit={event=>void saveCourse(event)} className="studio-form-grid">
