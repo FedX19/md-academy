@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { BookOpen, PlayCircle, CheckCircle2, ArrowRight, ArrowLeft, ShieldCheck, GraduationCap, LoaderCircle, LockKeyhole, Award, X, Clock3 } from "lucide-react";
+import { BookOpen, PlayCircle, CheckCircle2, ArrowRight, ArrowLeft, ShieldCheck, GraduationCap, LoaderCircle, LockKeyhole, Award, X, Clock3, Menu, LogOut } from "lucide-react";
 import { academyRequest, browserAcademyClient } from "@/lib/academy-client";
 
 type Lesson = { id: string; title: string; summary: string; body: string; lesson_type: "video" | "article" | "quiz"; duration_seconds: number; sort_order: number };
@@ -29,6 +29,8 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
   const [progress, setProgress] = useState<Progress[]>([]);
   const [selected, setSelected] = useState<Lesson | null>(null);
   const [activeCourseId,setActiveCourseId]=useState<string|null>(null);
+  const [mobileMenuOpen,setMobileMenuOpen]=useState(false);
+  const mobileMenuButtonRef=useRef<HTMLButtonElement|null>(null);
   const dialogRef=useRef<HTMLDialogElement|null>(null);
   const playerRef=useRef<HTMLVideoElement|null>(null);
   const [video, setVideo] = useState<string | null>(null);
@@ -81,6 +83,32 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
     document.body.style.overflow="hidden";
     return ()=>{document.body.style.overflow=prior;if(dialog.open)dialog.close();};
   },[activeCourseId]);
+
+  // Native dialogs remain above the mobile navigation; dismiss the menu before
+  // opening a course so the learner's video/modal always takes focus.
+  useEffect(()=>{
+    if(activeCourseId)setMobileMenuOpen(false);
+  },[activeCourseId]);
+
+  useEffect(()=>{
+    if(!mobileMenuOpen)return;
+    const onEscape=(event:KeyboardEvent)=>{
+      if(event.key==="Escape"){
+        event.preventDefault();
+        setMobileMenuOpen(false);
+        mobileMenuButtonRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown",onEscape);
+    return ()=>window.removeEventListener("keydown",onEscape);
+  },[mobileMenuOpen]);
+
+  function goToClassroomSection(id:"courses"|"certificates"){
+    setMobileMenuOpen(false);
+    // Scroll after the menu closes so the sticky Academy header does not
+    // obscure the destination on narrow phones.
+    requestAnimationFrame(()=>document.getElementById(id)?.scrollIntoView({behavior:"smooth",block:"start"}));
+  }
 
   // Always start each lesson at its player instead of retaining the scroll
   // position from the previous course outline or lesson.
@@ -393,11 +421,48 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
           <span><strong>PREVIEW AS LEAGUE COACH</strong> · Draft preview only. Your activity is simulated and will not be saved or issue a certificate.</span>
           <Link href="/admin">Back to Course Builder <ArrowRight size={15}/></Link>
         </div> : null}
-        <header className="topbar"><span>MODERN DAY COACH <b>/ ACADEMY</b></span>
+        <header className="topbar">
+          <span className="academy-desktop-header-label">MODERN DAY COACH <b>/ ACADEMY</b></span>
+          <Link className="academy-mobile-brand" href={isPreview ? "/admin" : "/school"}
+            aria-label={isPreview ? "Back to Academy Admin Studio" : "MD Academy Coach Classroom"}>
+            <Image src="/brand/md-academy.svg" alt="MD Academy" width={115} height={100} priority />
+          </Link>
           <div className="school-account-actions">
             {user?.admin ? <Link className="school-signout" href="/admin">Admin Studio</Link> : null}
             {isPreview ? <Link className="school-signout" href="/admin">Exit Preview</Link> : <button type="button" className="school-signout" onClick={() => void signOut()}>Sign out</button>}
           </div>
+          <button type="button" className="academy-mobile-menu-toggle" ref={mobileMenuButtonRef}
+            aria-label={mobileMenuOpen ? "Close Academy menu" : "Open Academy menu"}
+            aria-expanded={mobileMenuOpen} aria-controls="academy-mobile-menu"
+            onClick={()=>setMobileMenuOpen(open=>!open)}>
+            {mobileMenuOpen ? <X size={24} aria-hidden="true"/> : <Menu size={24} aria-hidden="true"/>}
+          </button>
+          {mobileMenuOpen ? <>
+            <button type="button" tabIndex={-1} aria-label="Close Academy navigation"
+              className="academy-mobile-menu-scrim" onClick={()=>setMobileMenuOpen(false)}/>
+            <nav id="academy-mobile-menu" className="academy-mobile-menu" aria-label="Academy mobile navigation">
+              <span className="academy-mobile-menu-title">COACH CLASSROOM</span>
+              {resumeTarget&&resumeCourse ? <button type="button"
+                onClick={()=>{setMobileMenuOpen(false);openLessonFromCourse(resumeTarget,resumeCourse);}}>
+                <PlayCircle size={18}/> Continue Learning <ArrowRight className="academy-menu-arrow" size={16}/>
+              </button> : null}
+              <button type="button" onClick={()=>goToClassroomSection("courses")}>
+                <BookOpen size={18}/> My Courses <ArrowRight className="academy-menu-arrow" size={16}/>
+              </button>
+              <button type="button" onClick={()=>goToClassroomSection("certificates")}>
+                <Award size={18}/> My Certificates <ArrowRight className="academy-menu-arrow" size={16}/>
+              </button>
+              {user?.admin ? <Link href="/admin" onClick={()=>setMobileMenuOpen(false)}>
+                <GraduationCap size={18}/> Admin Studio
+              </Link> : null}
+              {isPreview ? <Link href="/admin" onClick={()=>setMobileMenuOpen(false)}>
+                <ArrowLeft size={18}/> Exit Coach Preview
+              </Link> : <button type="button" className="academy-mobile-sign-out"
+                onClick={()=>{setMobileMenuOpen(false);void signOut();}}>
+                <LogOut size={18}/> Sign Out
+              </button>}
+            </nav>
+          </> : null}
         </header>
         <main className="content">
           <div className="intro">
