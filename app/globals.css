@@ -258,3 +258,98 @@ html,body{overflow-x:hidden;overflow-y:auto}
     }
   }
 }
+
+
+/* MD Academy mobile classroom v2: one-tap continuation before course library. */
+.academy-mobile-brand,.academy-mobile-menu-toggle,.academy-mobile-menu,.academy-mobile-menu-scrim{display:none}
+#courses,#certificates{scroll-margin-top:94px}
+@media(max-width:760px){
+  .school{display:flex;min-height:100dvh;overflow-x:clip}
+  .workspace{min-width:0;width:100%;overflow:visible}
+  .topbar{
+    position:sticky;top:0;z-index:50;
+    isolation:isolate;
+    display:flex;justify-content:space-between;align-items:center;
+    width:100%;height:74px;min-height:74px;
+    padding:8px 16px;
+    border-bottom:1px solid #34353b;
+    background:#0c0d10;
+  }
+  .topbar .academy-desktop-header-label,.topbar .school-account-actions{display:none}
+  .topbar .academy-mobile-brand{
+    display:inline-flex;align-items:center;flex:none;
+    height:58px;min-width:78px;max-width:132px;
+    text-decoration:none;
+  }
+  .academy-mobile-brand img{
+    width:auto;height:54px;max-width:120px;display:block;object-fit:contain;
+  }
+  .topbar .academy-mobile-menu-toggle{
+    display:inline-flex;align-items:center;justify-content:center;
+    flex:none;width:44px;height:44px;
+    border:1px solid #45464d;border-radius:10px;
+    color:#f5f5f7;background:#1d1e22;
+    cursor:pointer;position:relative;z-index:3;
+  }
+  .academy-mobile-menu-toggle:focus-visible,.academy-mobile-menu button:focus-visible,
+  .academy-mobile-menu a:focus-visible{outline:2px solid #f66921;outline-offset:3px}
+  .topbar .academy-mobile-menu-scrim{
+    display:block;position:fixed;
+    inset:0;
+    width:100vw;height:100dvh;
+    border:0;border-radius:0;background:rgba(0,0,0,.67);
+    z-index:1;
+  }
+  .topbar .academy-mobile-menu{
+    position:absolute;top:calc(100% - 1px);right:12px;z-index:2;
+    display:flex;flex-direction:column;gap:4px;
+    width:min(340px,calc(100vw - 24px));
+    max-height:calc(100dvh - 95px);
+    overflow-y:auto;overscroll-behavior:contain;
+    padding:12px;
+    border:1px solid #464248;border-radius:0 0 14px 14px;
+    background:#17181c;box-shadow:0 16px 50px rgba(0,0,0,.58);
+  }
+  .academy-mobile-menu-title{padding:10px 12px;color:#f66921;font-size:10px;font-weight:900;letter-spacing:.16em}
+  .academy-mobile-menu button,.academy-mobile-menu a{
+    display:flex;align-items:center;gap:12px;width:100%;
+    padding:14px 12px;min-height:48px;
+    color:#f4f4f6;background:transparent;border:0;border-radius:9px;
+    font-size:14px;font-weight:700;line-height:1.3;text-align:left;
+    text-decoration:none;cursor:pointer;
+  }
+  .academy-mobile-menu button:hover,.academy-mobile-menu a:hover{background:#2a292a}
+  .academy-mobile-menu button svg,.academy-mobile-menu a svg{flex:none;color:#fa7c34}
+  .academy-mobile-menu .academy-menu-arrow{margin-left:auto;color:#b2afb2}
+  .academy-mobile-menu .academy-mobile-sign-out{
+    margin-top:5px;border-top:1px solid #39383e;border-radius:0;color:#d7d8dd;
+  }
+  .content{padding:18px 16px max(42px,env(safe-area-inset-bottom));margin:0 auto}
+  /* The large hero and promotional value cards are desktop content. On a
+     phone the learner should see their next actionable lesson immediately. */
+  .content>.intro,.content .benefits{display:none}
+  .content .academy-continue-card{
+    display:flex;flex-direction:column;align-items:stretch;
+    gap:15px;padding:19px 17px;margin:0 0 26px;border-radius:15px;
+  }
+  .academy-continue-card .eyebrow{font-size:10px;letter-spacing:.15em}
+  .academy-continue-card h2{font-size:clamp(19px,5.7vw,24px);line-height:1.25;margin:7px 0}
+  .academy-continue-card p{font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+  .academy-continue-card .academy-continue-button{
+    min-height:48px;width:100%;justify-content:center;
+    margin-top:1px;padding:13px 14px;font-size:13px;
+  }
+  .content .section-title{margin:0 0 14px}
+  .content .section-title h2{font-size:21px}
+  .course-grid{grid-template-columns:1fr;gap:14px}
+  .academy-course-card .course-art{height:136px}
+  .course-art .academy-course-logo{width:150px;height:120px;max-width:64%}
+  .academy-course-card .course-copy{padding:16px}
+  .academy-course-card .course-copy h3{font-size:17px;line-height:1.3}
+  .academy-course-card .course-copy p{margin:9px 0 13px;min-height:0}
+  .content .academy-certificates{margin-top:28px;padding-top:22px}
+  #courses,#certificates{scroll-margin-top:94px}
+}
+@media(prefers-reduced-motion:reduce){
+  .topbar{backdrop-filter:none;-webkit-backdrop-filter:none}
+}
