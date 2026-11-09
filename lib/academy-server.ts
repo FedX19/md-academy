@@ -28,14 +28,19 @@ export async function authenticateAcademy(request: Request): Promise<AcademyIden
   const { data, error } = await client.auth.getUser(token);
   if (error || !data.user || data.user.is_anonymous) return null;
   const uid = data.user.id;
-  const [roles, profile] = await Promise.all([
+  const [roles, profile, authorCheck, publishCheck] = await Promise.all([
     client.from("academy_admin_roles").select("role").eq("user_id", uid).maybeSingle(),
     client.from("profiles").select("org_role,is_platform_admin,full_name").eq("id", uid).maybeSingle(),
+    client.rpc("academy_can_author"),
+    client.rpc("academy_can_publish"),
   ]);
-  if (roles.error || profile.error) return null;
+  if (roles.error || profile.error || authorCheck.error || publishCheck.error) return null;
   const platformAdmin = profile.data?.org_role === "platform_admin" || profile.data?.is_platform_admin === true;
-  const publisher = platformAdmin || roles.data?.role === "admin";
-  const author = publisher || roles.data?.role === "editor";
+  // Even platform administrators must be on the internal Modern Day Coach staff roster.
+  const publisher = (platformAdmin || roles.data?.role === "admin") && publishCheck.data === true;
+  // Editor role alone is insufficient: current MDC staff must still be active.
+  // Keep server authorization aligned with the database RLS helper.
+  const author = authorCheck.data === true && (publisher || roles.data?.role === "editor");
   return {
     id: uid,
     name: profile.data?.full_name ?? data.user.email ?? "Coach",
