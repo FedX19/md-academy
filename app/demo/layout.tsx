@@ -1,4 +1,7 @@
-import Link from "next/link";
-import Image from "next/image";
-import { House,BookOpen,GraduationCap,ChartNoAxesCombined } from "lucide-react";
-export default function DemoLayout({children}:{children:React.ReactNode}){return <div className="school"><aside className="sidebar"><Link href="/"><Image src="/brand/md-academy.svg" width={190} height={190} alt="MD Academy"/></Link><div className="nav-label">LEARNING</div><nav><Link href="/demo"><House size={18}/> Dashboard</Link><Link href="/demo/courses"><BookOpen size={18}/> Courses</Link><Link href="/demo/learn"><GraduationCap size={18}/> Continue learning</Link><Link href="/demo/progress"><ChartNoAxesCombined size={18}/> Progress</Link></nav><p className="sidebar-bottom">Learn it. Apply it. Repeat.</p></aside><div className="workspace"><header className="topbar"><span>MODERN DAY COACH <b>/ ACADEMY</b></span><Link href="/">EXIT PREVIEW</Link></header><main className="content">{children}</main><footer>MD Academy · Sample experience · No live course data</footer></div><nav className="mobile-nav"><Link href="/demo">Home</Link><Link href="/demo/courses">Courses</Link><Link href="/demo/learn">Learn</Link><Link href="/demo/progress">Progress</Link></nav></div>}
+import { redirect } from "next/navigation";
+
+// Retire public sample screens for the production Academy launch.
+export default function DemoLayout({children}: {children: React.ReactNode}) {
+  void children;
+  redirect("/school");
+}
