@@ -7,10 +7,10 @@ test("administrator can preview a draft in the real coach classroom without publ
  const admin = read("components/admin/admin-studio.tsx");
  const page = read("app/admin/preview/page.tsx");
  const school = read("components/school-client.tsx");
- assert.match(admin, /Preview as League Coach/);
+ assert.match(admin, /Review Learner View/);
  assert.match(admin, /\/admin\/preview\?courseId=/);
  assert.match(page, /SchoolClient previewCourseId=/);
- assert.match(school, /PREVIEW AS LEAGUE COACH/);
+ assert.doesNotMatch(school, /PREVIEW AS LEAGUE COACH/);
  assert.match(school, /isPreview \? courses : courses\.filter/);
  assert.match(school, /setProgress\(\[\]\)/);
 });
@@ -29,5 +29,5 @@ test("simulated preview cannot write course progress, submit real quizzes, or cl
  assert.match(school, /if \(isPreview\) \{/);
  assert.match(school, /if \(isPreview \|\| progressBusy\) return/);
  assert.match(school, /setQuizResult\(\{ scorePct: score, passed, requiredPct: required/);
- assert.match(school, /Your activity is simulated/);
+ assert.match(school, /Back to Studio/);
 });
