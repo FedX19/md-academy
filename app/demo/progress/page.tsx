@@ -1,2 +1,6 @@
-import Link from "next/link";import {Award,LockKeyhole,ArrowRight} from "lucide-react";
-export default function Progress(){return <><div className="intro compact"><span className="eyebrow">KEEP BUILDING</span><h1>Learning Progress</h1><p>Once connected, real lesson history and certificates will be saved to your authenticated UniteHQ account.</p></div><section className="progress-card"><Award size={45}/><h2>Earned, not just watched.</h2><p>Complete courses, demonstrate understanding, and earn a verified MD Academy certificate.</p><span><LockKeyhole size={17}/> No certificates issued in sample mode</span><Link href="/demo/learn" className="button">Explore a lesson <ArrowRight size={18}/></Link></section></>;}
+import { redirect } from "next/navigation";
+
+// Public samples are retired. Academy access is always verified by UniteHQ.
+export default function RetiredDemoPage() {
+  redirect("/school");
+}
