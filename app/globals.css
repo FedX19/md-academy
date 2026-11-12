@@ -88,11 +88,6 @@
 @media(max-width:600px){.academy-continue-card{align-items:stretch;flex-direction:column}.academy-continue-button{justify-content:center}}
 @media(prefers-reduced-motion:reduce){.academy-progress-track>span{transition:none}}
 
-/* Draft preview uses the actual learner classroom. No database writes in this mode. */
-.academy-preview-banner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;background:#302016;border-bottom:1px solid #b85c2a;color:#ffe3d2;padding:13px 25px;font-size:12px;line-height:1.5}
-.academy-preview-banner strong{color:#ffb47e;letter-spacing:.09em;font-size:11px}
-.academy-preview-banner a{display:inline-flex;align-items:center;gap:7px;color:#fff;text-decoration:underline;font-weight:800;white-space:nowrap}
-@media(max-width:760px){.academy-preview-banner{padding:12px 17px;font-size:11px}}
 
 /* Course cards open a scrollable course outline. Only one modal at a time. */
 html,body{overflow-x:hidden;overflow-y:auto}

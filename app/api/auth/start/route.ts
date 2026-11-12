@@ -2,7 +2,7 @@ import {createHash,randomBytes} from "node:crypto";
 import {NextRequest,NextResponse} from "next/server";
 const path="/api/auth";
 export async function GET(request:NextRequest){
- const origin=process.env.ACADEMY_ORIGIN;
+ const origin=process.env.ACADEMY_ORIGIN ?? "https://mdc-academy.app";
  if(!origin)return Response.json({error:"Academy domain is not configured."},{status:503});
  if(request.nextUrl.origin!==origin)return NextResponse.redirect(new URL("/api/auth/start",origin));
  const state=randomBytes(32).toString("base64url");

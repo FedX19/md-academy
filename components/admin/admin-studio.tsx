@@ -8,7 +8,7 @@ import { academyRequest, browserAcademyClient } from "@/lib/academy-client";
 
 type CourseStatus = "draft" | "review" | "published" | "archived";
 type LessonType = "video" | "article" | "quiz";
-type Audience = "mdc-coach" | "league-coach" | "parent" | "public";
+type Audience = "mdc-coach" | "league-coach" | "coach-all" | "parent" | "public";
 type Lesson = {
  id:string; title:string; summary:string; lesson_type:LessonType;
  body:string; duration_seconds:number; media_asset_id:string|null; sort_order:number;
@@ -26,9 +26,9 @@ type Question = {
 type View = "overview"|"curriculum"|"coaches";
 type CourseDraft = {title:string;slug:string;summary:string;audience:Audience};
 type LessonDraft = {title:string;summary:string;body:string;duration:number};
-const emptyCourse:CourseDraft={title:"",slug:"",summary:"",audience:"mdc-coach"};
+const emptyCourse:CourseDraft={title:"",slug:"",summary:"",audience:"coach-all"};
 const audienceNames:Record<Audience,string>={
- "mdc-coach":"MDC Coaches","league-coach":"League Coaches",parent:"Parents",public:"Public Learners",
+ "mdc-coach":"Individual Coach Members","league-coach":"League Coaches","coach-all":"Individual + League Coaches",parent:"Individual Parent Members",public:"Manual Assignment Only",
 };
 const typeNames:Record<LessonType,string>={video:"Video lesson",article:"Reading / article",quiz:"Knowledge check"};
 /**
@@ -262,11 +262,11 @@ export function AdminStudio(){
  }
  async function publishCourse(){
   if(!selectedCourse||!viewer?.publisher||readOnly)return;
-  if(!window.confirm("Publish this course? Check every lesson and quiz first. Published curriculum is locked to protect learner records."))return;
+  if(!window.confirm("Publish this course for "+audienceNames[courseDraft.audience]+"? Eligible members will receive access automatically. Curriculum will be locked after publishing."))return;
   await run(async()=>{
-   await academyRequest("/api/academy/admin/publish",{method:"POST",body:JSON.stringify({courseId:selectedCourse.id})});
+   await academyRequest("/api/academy/admin/publish",{method:"POST",body:JSON.stringify({courseId:selectedCourse.id,audience:courseDraft.audience})});
    await reload();
-  },"Course published. You can now assign coaches.");
+  },"Course published. Eligible members now receive access automatically.");
  }
  async function addModule(event:FormEvent<HTMLFormElement>){
   event.preventDefault();if(!selectedCourse||readOnly)return;
@@ -393,14 +393,14 @@ export function AdminStudio(){
      ...(status==="revoked"?{status:"revoked"}:{})}),
    });
    setCoachEmail("");
-  },status==="active"?"Coach assigned. They can enter Academy through UniteHQ.":"Coach access revoked.");
+  },status==="active"?"Member assigned. They can enter Academy through UniteHQ.":"Coach access revoked.");
  }
 
  if(access==="loading")return <main className="studio-gate"><LoaderCircle size={29}/><h1>Opening Academy Admin Studio</h1><p>Verifying your permissions…</p></main>;
  if(access==="denied")return <main className="studio-gate">
   <LockKeyhole size={38}/><h1>Administrator access required</h1>
   <p>{error||"This workspace is reserved for assigned MD Academy administrators and course editors."}</p>
-  <div className="studio-gate-actions"><Link href="/school">Return to coach classroom</Link><Link href="/auth/start">Sign in through UniteHQ</Link></div>
+  <div className="studio-gate-actions"><Link href="/school">Return to learner classroom</Link><Link href="/auth/start">Sign in through UniteHQ</Link></div>
  </main>;
 
  return <div className="studio-app">
@@ -410,10 +410,10 @@ export function AdminStudio(){
    <nav aria-label="Admin navigation">
     <button className={view==="overview"?"active":""} type="button" onClick={exitToOverview}><LayoutDashboard size={18}/> Overview</button>
     <button className={view==="curriculum"?"active":""} type="button" onClick={()=>{if(selectedCourse){setView("curriculum");}else exitToOverview();}}><BookOpen size={18}/> Curriculum Builder</button>
-    {viewer?.publisher?<button className={view==="coaches"?"active":""} type="button" onClick={showCoaches}><Users size={18}/> Coach Assignments</button>:null}
+    {viewer?.publisher?<button className={view==="coaches"?"active":""} type="button" onClick={showCoaches}><Users size={18}/> Member Assignments</button>:null}
    </nav>
    <div className="studio-divider"/>
-   <Link className="studio-classroom-link" href="/school"><GraduationCap size={18}/> View Coach Classroom <ArrowRight size={15}/></Link>
+   <Link className="studio-classroom-link" href="/school"><GraduationCap size={18}/> View Learner Classroom <ArrowRight size={15}/></Link>
    <div className="studio-sidebar-foot">
     <ShieldCheck size={17}/><span><strong>Private admin workspace</strong><small>Courses stay hidden until you publish</small></span>
    </div>
@@ -444,10 +444,10 @@ export function AdminStudio(){
           <BookOpen size={18}/> Curriculum Builder <ArrowRight size={15} className="studio-menu-arrow"/>
         </button>
         {viewer?.publisher ? <button type="button" className={view==="coaches"?"active":""} onClick={()=>navigateMobile("coaches")}>
-          <Users size={18}/> Coach Assignments <ArrowRight size={15} className="studio-menu-arrow"/>
+          <Users size={18}/> Member Assignments <ArrowRight size={15} className="studio-menu-arrow"/>
         </button> : null}
         <Link href="/school" onClick={()=>setMobileMenuOpen(false)}>
-          <GraduationCap size={18}/> View Coach Classroom <ArrowRight size={15} className="studio-menu-arrow"/>
+          <GraduationCap size={18}/> View Learner Classroom <ArrowRight size={15} className="studio-menu-arrow"/>
         </Link>
         <button type="button" className="studio-mobile-signout" onClick={()=>{setMobileMenuOpen(false);void signOut();}}>
           <LogOut size={18}/> Sign Out
@@ -500,7 +500,7 @@ export function AdminStudio(){
      <div className="studio-page-heading studio-course-heading"><div><div className="studio-eyebrow">CURRICULUM BUILDER <span className={"studio-status "+selectedCourse.status}>{statusName(selectedCourse.status)}</span></div>
       <h1>{selectedCourse.title}</h1><p>{countLessons(selectedCourse)} lessons across {selectedCourse.academy_modules?.length??0} modules · {audienceNames[selectedCourse.audience]}</p></div>
       <Link className="studio-secondary" href={"/admin/preview?courseId="+encodeURIComponent(selectedCourse.id)} target="_blank" rel="noopener noreferrer">
-       <GraduationCap size={17}/> Preview as League Coach <ArrowRight size={16}/>
+       <GraduationCap size={17}/> Review Learner View <ArrowRight size={16}/>
       </Link>
       {selectedCourse.status==="published"&&viewer?.publisher?<button className="studio-secondary" type="button" onClick={showCoaches}><Users size={17}/> Assign Coaches</button>:null}
      </div>
@@ -534,12 +534,13 @@ export function AdminStudio(){
         <form onSubmit={event=>void saveCourse(event)} className="studio-form-grid">
          <label className="studio-field studio-wide"><span>Course title</span><input required disabled={readOnly} maxLength={100} value={courseDraft.title} onChange={event=>setCourseDraft(x=>({...x,title:event.target.value}))}/></label>
          <label className="studio-field studio-wide"><span>Description</span><textarea required rows={4} maxLength={320} disabled={readOnly} value={courseDraft.summary} onChange={event=>setCourseDraft(x=>({...x,summary:event.target.value}))}/></label>
-         <label className="studio-field"><span>Audience</span><select disabled={readOnly} value={courseDraft.audience} onChange={event=>setCourseDraft(x=>({...x,audience:event.target.value as Audience}))}>{Object.entries(audienceNames).map(([key,value])=><option key={key} value={key}>{value}</option>)}</select></label>
+         <label className="studio-field"><span>Default access</span><select disabled={readOnly} value={courseDraft.audience} onChange={event=>setCourseDraft(x=>({...x,audience:event.target.value as Audience}))}>{Object.entries(audienceNames).map(([key,value])=><option key={key} value={key}>{value}</option>)}</select></label>
          <label className="studio-field"><span>Course URL</span><input required disabled={readOnly} maxLength={72} value={courseDraft.slug} onChange={event=>setCourseDraft(x=>({...x,slug:slugify(event.target.value)}))}/></label>
          {!readOnly?<button type="submit" className="studio-primary" disabled={working}><Save size={17}/> Save Course</button>:null}
         </form>
         <div className="studio-publish-zone">
-         <div><h3>Publish curriculum</h3><p>Build modules, add real lesson content, upload required videos, and add quiz questions before publishing.</p></div>
+         <div><h3>Publish curriculum</h3><p>Choose who gets course access, then publish. Active eligible memberships receive access automatically. Manual-only courses require an individual assignment.</p></div>
+         {!readOnly?<label className="studio-field studio-wide"><span>Who gets this course when published?</span><select aria-label="Publishing access group" value={courseDraft.audience} onChange={event=>setCourseDraft(x=>({...x,audience:event.target.value as Audience}))}>{Object.entries(audienceNames).map(([key,value])=><option key={key} value={key}>{value}</option>)}</select></label>:<p className="studio-muted">Access: {audienceNames[selectedCourse.audience]}</p>}
          {selectedCourse.status==="draft"&&!readOnly?<button type="button" disabled={working} className="studio-secondary" onClick={()=>void markForReview()}><ClipboardList size={17}/> Mark for Review</button>:null}
          {viewer?.publisher&&!readOnly?<button type="button" disabled={working} className="studio-primary" onClick={()=>void publishCourse()}><ShieldCheck size={17}/> Review & Publish</button>:null}
          {selectedCourse.status==="published"?<span className="studio-published-label"><Check size={17}/> Published and locked</span>:null}
@@ -624,18 +625,18 @@ export function AdminStudio(){
     </>:null}
 
     {view==="coaches"&&viewer?.publisher?<><div className="studio-page-heading"><div><div className="studio-eyebrow">CERTIFICATION ACCESS</div>
-      <h1>Assign <em>coaches.</em></h1><p>Choose a published course, then enroll or revoke access for a coach with an existing verified UniteHQ account.</p></div></div>
-     <div className="studio-panel studio-coaches-panel"><div className="studio-section-title"><div><h2>Course Assignments</h2><p>Coaches cannot enter private training until you assign them a published course.</p></div><ShieldCheck size={27}/></div>
+      <h1>Assign <em>members.</em></h1><p>Eligible parents and coaches are enrolled automatically. Use this screen for special individual access or revocations.</p></div></div>
+     <div className="studio-panel studio-coaches-panel"><div className="studio-section-title"><div><h2>Manual Assignments</h2><p>Automatic access follows each course’s audience. Assign specific verified UniteHQ users here when needed.</p></div><ShieldCheck size={27}/></div>
       {publishedCourses.length===0?<p className="studio-empty-copy">Publish your first course to begin enrolling coaches.</p>
       :<div className="studio-form-grid">
        <label className="studio-field studio-wide"><span>Published course</span><select value={coachCourseId} onChange={event=>setCoachCourseId(event.target.value)}>
         <option value="">Select a course</option>{publishedCourses.map(course=><option key={course.id} value={course.id}>{course.title}</option>)}
        </select></label>
-       <label className="studio-field studio-wide"><span>Coach email in UniteHQ</span><input type="email" autoComplete="email" maxLength={254} placeholder="coach@example.com" value={coachEmail} onChange={event=>setCoachEmail(event.target.value)}/></label>
-       <div className="studio-form-actions"><button type="button" className="studio-primary" disabled={working||!coachEmail.trim()||!coachCourseId} onClick={()=>void changeEnrollment("active")}><Plus size={17}/> Enroll Coach</button>
+       <label className="studio-field studio-wide"><span>Member email in UniteHQ</span><input type="email" autoComplete="email" maxLength={254} placeholder="coach@example.com" value={coachEmail} onChange={event=>setCoachEmail(event.target.value)}/></label>
+       <div className="studio-form-actions"><button type="button" className="studio-primary" disabled={working||!coachEmail.trim()||!coachCourseId} onClick={()=>void changeEnrollment("active")}><Plus size={17}/> Grant Access</button>
         <button type="button" className="studio-secondary" disabled={working||!coachEmail.trim()||!coachCourseId} onClick={()=>void changeEnrollment("revoked")}><X size={17}/> Revoke Access</button></div>
       </div>}
-      <p className="studio-muted">Enrollment uses the coach’s exact verified UniteHQ email. Never share credentials or enroll someone by a guessed address.</p>
+      <p className="studio-muted">Manual assignments use a member’s exact verified UniteHQ email and remain independent of their membership plan.</p>
      </div>
     </>:null}
 

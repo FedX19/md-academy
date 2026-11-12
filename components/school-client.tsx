@@ -211,7 +211,7 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
           const response = await academyRequest<{ course: Course }>("/api/academy/admin/preview?courseId=" + encodeURIComponent(previewCourseId));
           if (!cancelled) {
             // Render as a learner. Hide admin-only menus and production progress.
-            setUser({ name: "League Coach (Preview)", admin: false });
+            setUser({ name: "Course Reviewer", admin: false });
             setCourses([response.course]);
             setProgress([]);
             setCertificates([]);
@@ -399,7 +399,7 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
     <div className="school">
       <aside className="sidebar">
         <Link href="/"><Image src="/brand/md-academy.svg" alt="MD Academy" width={190} height={190} /></Link>
-        <div className="nav-label">YOUR COACHING SCHOOL</div>
+        <div className="nav-label">YOUR ACADEMY</div>
         <nav>
           <a href="#courses"><BookOpen size={18} /> My Courses</a>
           {resumeTarget && resumeCourse
@@ -414,10 +414,6 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
         <p className="sidebar-bottom">Learn it. Apply it. Repeat.</p>
       </aside>
       <div className="workspace">
-        {isPreview ? <div className="academy-preview-banner" role="status">
-          <span><strong>PREVIEW AS LEAGUE COACH</strong> · Draft preview only. Your activity is simulated and will not be saved or issue a certificate.</span>
-          <Link href="/admin">Back to Course Builder <ArrowRight size={15}/></Link>
-        </div> : null}
         <header className="topbar">
           <span className="academy-desktop-header-label">MODERN DAY COACH <b>/ ACADEMY</b></span>
           <Link className="academy-mobile-brand" href={isPreview ? "/admin" : "/school"}
@@ -426,7 +422,7 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
           </Link>
           <div className="school-account-actions">
             {user?.admin ? <Link className="school-signout" href="/admin">Admin Studio</Link> : null}
-            {isPreview ? <Link className="school-signout" href="/admin">Exit Preview</Link> : <button type="button" className="school-signout" onClick={() => void signOut()}>Sign out</button>}
+            {isPreview ? <Link className="school-signout" href="/admin">Back to Studio</Link> : <button type="button" className="school-signout" onClick={() => void signOut()}>Sign out</button>}
           </div>
           <button type="button" className="academy-mobile-menu-toggle" ref={mobileMenuButtonRef}
             aria-label={mobileMenuOpen ? "Close Academy menu" : "Open Academy menu"}
@@ -438,7 +434,7 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
             <button type="button" tabIndex={-1} aria-label="Close Academy navigation"
               className="academy-mobile-menu-scrim" onClick={()=>setMobileMenuOpen(false)}/>
             <nav id="academy-mobile-menu" className="academy-mobile-menu" aria-label="Academy mobile navigation">
-              <span className="academy-mobile-menu-title">COACH CLASSROOM</span>
+              <span className="academy-mobile-menu-title">ACADEMY CLASSROOM</span>
               {resumeTarget&&resumeCourse ? <button type="button"
                 onClick={()=>{setMobileMenuOpen(false);openLessonFromCourse(resumeTarget,resumeCourse);}}>
                 <PlayCircle size={18}/> Continue Learning <ArrowRight className="academy-menu-arrow" size={16}/>
@@ -453,7 +449,7 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
                 <GraduationCap size={18}/> Admin Studio
               </Link> : null}
               {isPreview ? <Link href="/admin" onClick={()=>setMobileMenuOpen(false)}>
-                <ArrowLeft size={18}/> Exit Coach Preview
+                <ArrowLeft size={18}/> Back to Studio
               </Link> : <button type="button" className="academy-mobile-sign-out"
                 onClick={()=>{setMobileMenuOpen(false);void signOut();}}>
                 <LogOut size={18}/> Sign Out
@@ -464,7 +460,7 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
         <main className="content">
           <div className="intro">
             <span className="eyebrow">MD ACADEMY</span>
-            <h1>YOUR COACHING <em>CLASSROOM.</em></h1>
+            <h1>YOUR ACADEMY <em>CLASSROOM.</em></h1>
             <p>{user ? "Welcome, " + user.name + ". Pick up where you left off." : "Connecting your UniteHQ account…"}</p>
           </div>
           {loading ? <p role="status" className="loading-status"><LoaderCircle size={18} /> Loading your courses…</p> : null}
@@ -473,7 +469,7 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
             <div className="benefits">
               <div><ShieldCheck /><strong>Private courses</strong><span>Assigned training only</span></div>
               <div><CheckCircle2 /><strong>Saved progress</strong><span>{completedCount} lesson{completedCount === 1 ? "" : "s"} completed</span></div>
-              <div><GraduationCap /><strong>One coaching system</strong><span>Develop the right way</span></div>
+              <div><GraduationCap /><strong>One development system</strong><span>Learn. Apply. Improve.</span></div>
             </div>
             {resumeTarget ? <section className="academy-continue-card" aria-label="Continue your training">
               <div><span className="eyebrow">PICK UP WHERE YOU LEFT OFF</span>
@@ -486,7 +482,7 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
               </button>
             </section> : null}
             <div className="section-title" id="courses"><h2>My courses</h2></div>
-            {visible.length === 0 ? <p className="notice">No courses are assigned yet. Ask an MDC Academy administrator to enroll you.</p>
+            {visible.length === 0 ? <p className="notice">Your courses will appear here when MDC publishes them for your membership.</p>
               : <div className="course-grid">
                 {visible.map(course=>{
                   const lessons=sortedLessons(course);
@@ -501,7 +497,7 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
                       <div className="academy-progress-track" role="progressbar" aria-label={course.title+" progress"} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
                         <span style={{width:pct+"%"}}/>
                       </div>
-                      <span className="academy-card-open">{isAdminDraft(course)?"Preview draft course":"View modules & progress"} <ArrowRight size={16}/></span>
+                      <span className="academy-card-open">{isAdminDraft(course)?"Review draft course":"View modules & progress"} <ArrowRight size={16}/></span>
                     </div>
                   </button>;
                 })}

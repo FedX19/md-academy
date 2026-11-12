@@ -1,4 +1,6 @@
-import Link from "next/link";
-import {ArrowRight,GraduationCap,BookOpenCheck,Target,Award} from "lucide-react";
-import {previewCourses} from "@/lib/demo";
-export default function Dashboard(){return <><div className="intro"><span className="eyebrow">YOUR LEARNING STARTS HERE</span><h1>THE WORK BEHIND<br/><em>BETTER COACHING.</em></h1><p>Practical lessons. Clear standards. One development system.</p></div><section className="feature"><GraduationCap size={185} strokeWidth={1} className="feature-icon"/><div><span className="eyebrow">FEATURED LEARNING PATH</span><h2>MDC Coach<br/>Foundations</h2><p>The standards behind teaching, leading and developing players.</p><Link href="/demo/learn" className="button">Explore the course <ArrowRight size={18}/></Link></div></section><div className="benefits"><div><BookOpenCheck/><strong>Short lessons</strong><span>Learn in minutes, not hours.</span></div><div><Target/><strong>Real coaching</strong><span>Apply lessons on the field.</span></div><div><Award/><strong>Progress</strong><span>Build toward certification.</span></div></div><div className="section-title"><h2>Explore courses</h2><Link href="/demo/courses">View all <ArrowRight size={16}/></Link></div><div className="course-grid">{previewCourses.map((c,i)=><Link href={"/demo/learn?course="+c.slug} key={c.slug} className="course"><div className="course-art"><span>0{i+1}</span><small>{c.category}</small></div><div className="course-copy"><h3>{c.title}</h3><p>{c.summary}</p><div>{c.lessons.length} lessons · {c.minutes} min <ArrowRight size={16}/></div></div></Link>)}</div><p className="notice">Preview only. Real enrollments, videos, quizzes and certificates will be protected by Academy-specific access checks.</p></>;}
+import { redirect } from "next/navigation";
+
+// Public samples are retired. Academy access is always verified by UniteHQ.
+export default function RetiredDemoPage() {
+  redirect("/school");
+}

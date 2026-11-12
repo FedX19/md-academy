@@ -6,8 +6,8 @@ export const isText = (value: unknown, max: number): value is string =>
   typeof value === "string" && value.trim().length > 0 && value.length <= max;
 export const isOrder = (value: unknown): value is number =>
   typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 10000;
-export const isAudience = (x: unknown): x is "mdc-coach" | "league-coach" | "parent" | "public" =>
-  x === "mdc-coach" || x === "league-coach" || x === "parent" || x === "public";
+export const isAudience = (x: unknown): x is "mdc-coach" | "league-coach" | "coach-all" | "parent" | "public" =>
+  x === "mdc-coach" || x === "league-coach" || x === "coach-all" || x === "parent" || x === "public";
 export const isLessonType = (x: unknown): x is "video" | "article" | "quiz" =>
   x === "video" || x === "article" || x === "quiz";
 export function fail(error: string, status: number) {

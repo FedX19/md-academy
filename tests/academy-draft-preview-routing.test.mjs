@@ -26,5 +26,5 @@ test("published-only playback remains protected against unpublished and unenroll
  const playback=read("app/api/academy/playback/route.ts");
  assert.match(playback,/if\(course\.status!=="published"\)/);
  assert.match(playback,/if\(!user\.admin&&!enrollment\)/);
- assert.match(playback,/Draft lessons must be opened through Preview as League Coach/);
+ assert.match(playback,/Draft lessons are available only in the private staff learner review/);
 });

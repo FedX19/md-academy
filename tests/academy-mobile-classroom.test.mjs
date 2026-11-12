@@ -34,7 +34,7 @@ test("Mobile learner goes directly to resume, courses and certificates",()=>{
 test("Menu preserves learner, preview, admin and sign-out actions",()=>{
  const ui=read("components/school-client.tsx");
  assert.match(ui,/openLessonFromCourse\(resumeTarget,resumeCourse\)/);
- assert.match(ui,/Exit Coach Preview/);
+ assert.match(ui,/Back to Studio/);
  assert.match(ui,/Admin Studio/);
  assert.match(ui,/void signOut\(\)/);
  assert.match(ui,/setMobileMenuOpen\(false\)/);
