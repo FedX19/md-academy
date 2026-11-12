@@ -400,7 +400,7 @@ export function AdminStudio(){
  if(access==="denied")return <main className="studio-gate">
   <LockKeyhole size={38}/><h1>Administrator access required</h1>
   <p>{error||"This workspace is reserved for assigned MD Academy administrators and course editors."}</p>
-  <div className="studio-gate-actions"><Link href="/school">Return to coach classroom</Link><Link href="/auth/start">Sign in through UniteHQ</Link></div>
+  <div className="studio-gate-actions"><Link href="/school">Return to learner classroom</Link><Link href="/auth/start">Sign in through UniteHQ</Link></div>
  </main>;
 
  return <div className="studio-app">
@@ -413,7 +413,7 @@ export function AdminStudio(){
     {viewer?.publisher?<button className={view==="coaches"?"active":""} type="button" onClick={showCoaches}><Users size={18}/> Member Assignments</button>:null}
    </nav>
    <div className="studio-divider"/>
-   <Link className="studio-classroom-link" href="/school"><GraduationCap size={18}/> View Coach Classroom <ArrowRight size={15}/></Link>
+   <Link className="studio-classroom-link" href="/school"><GraduationCap size={18}/> View Learner Classroom <ArrowRight size={15}/></Link>
    <div className="studio-sidebar-foot">
     <ShieldCheck size={17}/><span><strong>Private admin workspace</strong><small>Courses stay hidden until you publish</small></span>
    </div>
@@ -447,7 +447,7 @@ export function AdminStudio(){
           <Users size={18}/> Member Assignments <ArrowRight size={15} className="studio-menu-arrow"/>
         </button> : null}
         <Link href="/school" onClick={()=>setMobileMenuOpen(false)}>
-          <GraduationCap size={18}/> View Coach Classroom <ArrowRight size={15} className="studio-menu-arrow"/>
+          <GraduationCap size={18}/> View Learner Classroom <ArrowRight size={15} className="studio-menu-arrow"/>
         </Link>
         <button type="button" className="studio-mobile-signout" onClick={()=>{setMobileMenuOpen(false);void signOut();}}>
           <LogOut size={18}/> Sign Out
