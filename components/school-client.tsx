@@ -211,7 +211,7 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
           const response = await academyRequest<{ course: Course }>("/api/academy/admin/preview?courseId=" + encodeURIComponent(previewCourseId));
           if (!cancelled) {
             // Render as a learner. Hide admin-only menus and production progress.
-            setUser({ name: "League Coach (Preview)", admin: false });
+            setUser({ name: "Course Reviewer", admin: false });
             setCourses([response.course]);
             setProgress([]);
             setCertificates([]);
@@ -414,10 +414,6 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
         <p className="sidebar-bottom">Learn it. Apply it. Repeat.</p>
       </aside>
       <div className="workspace">
-        {isPreview ? <div className="academy-preview-banner" role="status">
-          <span><strong>PREVIEW AS LEAGUE COACH</strong> · Draft preview only. Your activity is simulated and will not be saved or issue a certificate.</span>
-          <Link href="/admin">Back to Course Builder <ArrowRight size={15}/></Link>
-        </div> : null}
         <header className="topbar">
           <span className="academy-desktop-header-label">MODERN DAY COACH <b>/ ACADEMY</b></span>
           <Link className="academy-mobile-brand" href={isPreview ? "/admin" : "/school"}
@@ -426,7 +422,7 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
           </Link>
           <div className="school-account-actions">
             {user?.admin ? <Link className="school-signout" href="/admin">Admin Studio</Link> : null}
-            {isPreview ? <Link className="school-signout" href="/admin">Exit Preview</Link> : <button type="button" className="school-signout" onClick={() => void signOut()}>Sign out</button>}
+            {isPreview ? <Link className="school-signout" href="/admin">Back to Studio</Link> : <button type="button" className="school-signout" onClick={() => void signOut()}>Sign out</button>}
           </div>
           <button type="button" className="academy-mobile-menu-toggle" ref={mobileMenuButtonRef}
             aria-label={mobileMenuOpen ? "Close Academy menu" : "Open Academy menu"}
@@ -453,7 +449,7 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
                 <GraduationCap size={18}/> Admin Studio
               </Link> : null}
               {isPreview ? <Link href="/admin" onClick={()=>setMobileMenuOpen(false)}>
-                <ArrowLeft size={18}/> Exit Coach Preview
+                <ArrowLeft size={18}/> Back to Studio
               </Link> : <button type="button" className="academy-mobile-sign-out"
                 onClick={()=>{setMobileMenuOpen(false);void signOut();}}>
                 <LogOut size={18}/> Sign Out
@@ -501,7 +497,7 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
                       <div className="academy-progress-track" role="progressbar" aria-label={course.title+" progress"} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
                         <span style={{width:pct+"%"}}/>
                       </div>
-                      <span className="academy-card-open">{isAdminDraft(course)?"Preview draft course":"View modules & progress"} <ArrowRight size={16}/></span>
+                      <span className="academy-card-open">{isAdminDraft(course)?"Review draft course":"View modules & progress"} <ArrowRight size={16}/></span>
                     </div>
                   </button>;
                 })}
