@@ -13,7 +13,7 @@ export async function POST(request:Request){
  if(!course)return Response.json({error:"Course unavailable."},{status:403,headers:privateHeaders});
  if(course.status!=="published")return Response.json({
   error:user.author
-    ?"Draft lessons must be opened through Preview as League Coach. No publication is required."
+    ?"Draft lessons are available only in the private staff learner review. No publication is required."
     :"Course unavailable."
  },{status:403,headers:privateHeaders});
  const {data:enrollment}=await user.client.from("academy_enrollments").select("id").eq("course_id",moduleRow.course_id).eq("user_id",user.id).eq("status","active").maybeSingle();
