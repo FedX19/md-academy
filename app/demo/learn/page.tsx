@@ -1,2 +1,6 @@
-import {Suspense} from "react";import {PreviewLesson} from "@/components/preview-lesson";
-export default function Learn(){return <Suspense fallback={<p>Loading lesson...</p>}><PreviewLesson/></Suspense>;}
+import { redirect } from "next/navigation";
+
+// Public samples are retired. Academy access is always verified by UniteHQ.
+export default function RetiredDemoPage() {
+  redirect("/school");
+}
