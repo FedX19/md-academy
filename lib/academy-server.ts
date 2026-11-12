@@ -43,7 +43,7 @@ export async function authenticateAcademy(request: Request): Promise<AcademyIden
   const author = authorCheck.data === true && (publisher || roles.data?.role === "editor");
   return {
     id: uid,
-    name: profile.data?.full_name ?? data.user.email ?? "Coach",
+    name: profile.data?.full_name ?? data.user.email ?? "Member",
     email: data.user.email ?? null,
     admin: author,
     author,
