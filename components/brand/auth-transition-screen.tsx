@@ -9,10 +9,10 @@ export function AuthTransitionScreen({ error }: { error?: string | null }) {
         <div className="academy-entry-logo-wrap">
           <Image
             className="academy-entry-logo"
-            src="/brand/md-academy.svg"
+            src="/brand/md-academy-app-icon.svg"
             alt="MD Academy"
-            width={600}
-            height={550}
+            width={512}
+            height={512}
             priority
           />
         </div>
