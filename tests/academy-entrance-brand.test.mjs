@@ -7,7 +7,7 @@ const read=(path)=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 test("Academy entry uses the same compact one-tap layout as other MDC apps",()=>{
   const component=read("components/brand/entrance-screen.tsx");
   const css=read("app/globals.css");
-  assert.match(component,/src="\/brand\/md-academy\.svg"/);
+  assert.match(component,/src="\/brand\/md-academy-app-icon\.svg"/);
   assert.match(component,/Develop with purpose\./);
   assert.match(component,/Enter MD Academy/);
   assert.match(component,/href="\/api\/auth\/start"/);
