@@ -420,6 +420,9 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
             aria-label={isPreview ? "Back to Academy Admin Studio" : "MD Academy Coach Classroom"}>
             <Image src="/brand/md-academy.svg" alt="MD Academy" width={115} height={100} priority />
           </Link>
+          <a className="academy-return-link" href="https://app.unite-hq.com/platform" aria-label="Back to UniteHQ platform">
+            <ArrowLeft size={16} aria-hidden="true" /> UniteHQ
+          </a>
           <div className="school-account-actions">
             {user?.admin ? <Link className="school-signout" href="/admin">Admin Studio</Link> : null}
             {isPreview ? <Link className="school-signout" href="/admin">Back to Studio</Link> : <button type="button" className="school-signout" onClick={() => void signOut()}>Sign out</button>}
