@@ -6,7 +6,7 @@ const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
 test("admin studio matches mobile classroom branding and accessible hamburger navigation",()=>{
  const ui=read("components/admin/admin-studio.tsx"),css=read("app/admin/admin.css");
  assert.match(ui,/className="studio-mobile-brand"/);
- assert.match(ui,/src="\/brand\/md-academy\.svg"/);
+ assert.match(ui,/src="\/brand\/md-academy-app-icon\.svg"/);
  assert.match(ui,/className="studio-mobile-menu-toggle"/);
  assert.match(ui,/aria-expanded=\{mobileMenuOpen\}/);
  assert.match(ui,/aria-controls="studio-mobile-menu"/);

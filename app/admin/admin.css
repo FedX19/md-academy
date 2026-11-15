@@ -140,3 +140,13 @@
 @media(prefers-reduced-motion:reduce){
   .studio-mobile-menu,.studio-mobile-outline-toggle svg{transition:none!important}
 }
+
+
+/* Approved app icon for Admin Studio headers and permissions loader. */
+.studio-brand img { width:136px; height:136px; }
+.academy-studio-header-icon { display:block; width:36px; height:36px; flex:none; }
+.studio-gate > img { display:block; width:128px; height:128px; object-fit:contain; }
+@media(max-width:850px) {
+  .studio-topbar > .academy-studio-header-icon { display:none; }
+  .studio-topbar .studio-mobile-brand img { width:48px; height:48px; max-width:48px; object-fit:contain; }
+}
