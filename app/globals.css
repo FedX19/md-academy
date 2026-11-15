@@ -362,3 +362,16 @@ html,body{overflow-x:hidden;overflow-y:auto}
 @media(max-width:760px) {
   .topbar .academy-return-link {padding:8px;min-width:44px;font-size:10px;flex:none}
 }
+
+
+/* Approved MD Academy app icon in desktop/mobile classroom headers and entry. */
+.academy-entry-logo-wrap { width:min(55vw,220px); max-width:220px; }
+.academy-entry-logo { aspect-ratio:1/1; }
+.sidebar img { width:136px; height:136px; }
+.academy-desktop-header-icon { display:block; width:38px; height:38px; flex:none; margin-right:10px; }
+.topbar .academy-mobile-brand img { width:48px; height:48px; max-width:48px; }
+@media(max-width:760px) {
+  .topbar .academy-desktop-header-icon { display:none; }
+  .topbar .academy-mobile-brand { min-width:52px; max-width:64px; }
+  .academy-entry-logo-wrap { width:min(58vw,210px); }
+}
