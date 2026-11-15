@@ -10,7 +10,7 @@
     "content:check": "node scripts/validate-course.mjs content/examples/coach-foundations.json",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "prebuild": "node scripts/generate-icons.mjs",
+    "prebuild": "node scripts/generate-icons.mjs && npm test",
     "predev": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
