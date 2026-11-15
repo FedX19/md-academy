@@ -398,7 +398,7 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
   return (
     <div className="school">
       <aside className="sidebar">
-        <Link href="/"><Image src="/brand/md-academy.svg" alt="MD Academy" width={190} height={190} /></Link>
+        <Link href="/"><Image src="/brand/md-academy-app-icon.svg" alt="MD Academy" width={144} height={144} /></Link>
         <div className="nav-label">YOUR ACADEMY</div>
         <nav>
           <a href="#courses"><BookOpen size={18} /> My Courses</a>
@@ -415,10 +415,11 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
       </aside>
       <div className="workspace">
         <header className="topbar">
+          <Image className="academy-desktop-header-icon" src="/brand/md-academy-app-icon.svg" alt="" width={38} height={38} priority />
           <span className="academy-desktop-header-label">MODERN DAY COACH <b>/ ACADEMY</b></span>
           <Link className="academy-mobile-brand" href={isPreview ? "/admin" : "/school"}
             aria-label={isPreview ? "Back to Academy Admin Studio" : "MD Academy Coach Classroom"}>
-            <Image src="/brand/md-academy.svg" alt="MD Academy" width={115} height={100} priority />
+            <Image src="/brand/md-academy-app-icon.svg" alt="MD Academy" width={56} height={56} priority />
           </Link>
           <a className="academy-return-link" href="https://app.unite-hq.com/platform" aria-label="Back to UniteHQ platform">
             <ArrowLeft size={16} aria-hidden="true" /> UniteHQ
@@ -466,7 +467,7 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
             <h1>YOUR ACADEMY <em>CLASSROOM.</em></h1>
             <p>{user ? "Welcome, " + user.name + ". Pick up where you left off." : "Connecting your UniteHQ account…"}</p>
           </div>
-          {loading ? <p role="status" className="loading-status"><LoaderCircle size={18} /> Loading your courses…</p> : null}
+          {loading ? <p role="status" className="loading-status"><Image src="/brand/md-academy-app-icon.svg" alt="" width={32} height={32} /><LoaderCircle size={18} /> Loading your courses…</p> : null}
           {error && !activeCourseId ? <div role="alert" className="notice">{error} {!user && !loading ? <a href="/auth/start"> Sign in through UniteHQ</a> : null}</div> : null}
           {user ? <>
             <div className="benefits">
