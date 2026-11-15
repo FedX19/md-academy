@@ -7,7 +7,7 @@ test("Mobile academy has a sticky real-logo header with working hamburger menu",
  const ui=read("components/school-client.tsx");
  const css=read("app/globals.css");
  assert.match(ui,/className="academy-mobile-brand"/);
- assert.match(ui,/src="\/brand\/md-academy\.svg"/);
+ assert.match(ui,/src="\/brand\/md-academy-app-icon\.svg"/);
  assert.match(ui,/className="academy-mobile-menu-toggle"/);
  assert.match(ui,/aria-expanded=\{mobileMenuOpen\}/);
  assert.match(ui,/aria-controls="academy-mobile-menu"/);
