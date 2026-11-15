@@ -396,7 +396,7 @@ export function AdminStudio(){
   },status==="active"?"Member assigned. They can enter Academy through UniteHQ.":"Coach access revoked.");
  }
 
- if(access==="loading")return <main className="studio-gate"><LoaderCircle size={29}/><h1>Opening Academy Admin Studio</h1><p>Verifying your permissions…</p></main>;
+ if(access==="loading")return <main className="studio-gate"><Image src="/brand/md-academy-app-icon.svg" alt="MD Academy" width={128} height={128} priority/><LoaderCircle size={29}/><h1>Opening Academy Admin Studio</h1><p>Verifying your permissions…</p></main>;
  if(access==="denied")return <main className="studio-gate">
   <LockKeyhole size={38}/><h1>Administrator access required</h1>
   <p>{error||"This workspace is reserved for assigned MD Academy administrators and course editors."}</p>
@@ -405,7 +405,7 @@ export function AdminStudio(){
 
  return <div className="studio-app">
   <aside className="studio-sidebar">
-   <Link className="studio-brand" href="/admin"><Image alt="MD Academy" src="/brand/md-academy.svg" width={164} height={150} priority/></Link>
+   <Link className="studio-brand" href="/admin"><Image alt="MD Academy" src="/brand/md-academy-app-icon.svg" width={144} height={144} priority/></Link>
    <div className="studio-nav-heading">ACADEMY MANAGEMENT</div>
    <nav aria-label="Admin navigation">
     <button className={view==="overview"?"active":""} type="button" onClick={exitToOverview}><LayoutDashboard size={18}/> Overview</button>
@@ -420,10 +420,11 @@ export function AdminStudio(){
   </aside>
   <div className="studio-main">
    <header className="studio-topbar">
+    <Image className="academy-studio-header-icon" src="/brand/md-academy-app-icon.svg" alt="" width={36} height={36} priority />
     <div className="studio-topbar-breadcrumb">MODERN DAY COACH <span>/</span> <strong>ACADEMY ADMIN STUDIO</strong></div>
     <Link className="studio-mobile-brand" href="/admin" aria-label="MD Academy Admin Studio"
       onClick={event=>{if(view!=="overview"){event.preventDefault();exitToOverview();window.scrollTo({top:0,behavior:"smooth"});}}}>
-      <Image src="/brand/md-academy.svg" alt="MD Academy" width={115} height={100} priority/>
+      <Image src="/brand/md-academy-app-icon.svg" alt="MD Academy" width={56} height={56} priority/>
     </Link>
     <div className="studio-topbar-actions"><span className="studio-user-role">{viewer?.publisher?"Administrator":"Course Editor"}</span><button type="button" onClick={()=>void signOut()}>Sign out</button></div>
     <button type="button" className="studio-mobile-menu-toggle" ref={mobileMenuButton}
