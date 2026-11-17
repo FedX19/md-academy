@@ -38,9 +38,9 @@ export async function authenticateAcademy(request: Request): Promise<AcademyIden
   const platformAdmin = profile.data?.org_role === "platform_admin" || profile.data?.is_platform_admin === true;
   // Even platform administrators must be on the internal Modern Day Coach staff roster.
   const publisher = (platformAdmin || roles.data?.role === "admin") && publishCheck.data === true;
-  // Editor role alone is insufficient: current MDC staff must still be active.
-  // Keep server authorization aligned with the database RLS helper.
-  const author = authorCheck.data === true && (publisher || roles.data?.role === "editor");
+  // The database helper verifies current internal MDC staffing, including staff
+  // coaches. Subscriber/league coach memberships never provide Studio rights.
+  const author = authorCheck.data === true;
   return {
     id: uid,
     name: profile.data?.full_name ?? data.user.email ?? "Member",
