@@ -363,8 +363,8 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
   }
 
   async function signOut() {
-    await browserAcademyClient()?.auth.signOut();
-    window.location.replace("/");
+    try { await browserAcademyClient()?.auth.signOut({ scope: "local" }); }
+    finally { window.location.replace("https://app.unite-hq.com/platform"); }
   }
 
   const visible = isPreview ? courses : courses.filter(course => course.status === "published" || user?.admin);
@@ -409,6 +409,7 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
               </button>
             : <a href="#courses"><PlayCircle size={18}/> Continue Learning</a>}
           <a href="#certificates"><Award size={18} /> Certificates</a>
+          <a href="https://app.unite-hq.com/platform"><ArrowLeft size={18}/> Back to UniteHQ</a>
           {user?.admin ? <Link href="/admin"><GraduationCap size={18} /> Academy Admin Studio</Link> : null}
         </nav>
         <p className="sidebar-bottom">Learn it. Apply it. Repeat.</p>
@@ -422,7 +423,7 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
             <Image src="/brand/md-academy-app-icon.svg" alt="MD Academy" width={56} height={56} priority />
           </Link>
           <a className="academy-return-link" href="https://app.unite-hq.com/platform" aria-label="Back to UniteHQ platform">
-            <ArrowLeft size={16} aria-hidden="true" /> UniteHQ
+            <ArrowLeft size={16} aria-hidden="true" /> Back to UniteHQ
           </a>
           <div className="school-account-actions">
             {user?.admin ? <Link className="school-signout" href="/admin">Admin Studio</Link> : null}
@@ -449,6 +450,9 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
               <button type="button" onClick={()=>goToClassroomSection("certificates")}>
                 <Award size={18}/> My Certificates <ArrowRight className="academy-menu-arrow" size={16}/>
               </button>
+              <a href="https://app.unite-hq.com/platform" onClick={()=>setMobileMenuOpen(false)}>
+                <ArrowLeft size={18}/> Back to UniteHQ <ArrowRight className="academy-menu-arrow" size={16}/>
+              </a>
               {user?.admin ? <Link href="/admin" onClick={()=>setMobileMenuOpen(false)}>
                 <GraduationCap size={18}/> Admin Studio
               </Link> : null}
