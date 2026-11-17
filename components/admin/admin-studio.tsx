@@ -230,8 +230,8 @@ export function AdminStudio(){
   if(selectedCourse?.status==="published")setCoachCourseId(selectedCourse.id);
  }
  async function signOut(){
-  await browserAcademyClient()?.auth.signOut();
-  window.location.replace("https://app.unite-hq.com/platform");
+  try { await browserAcademyClient()?.auth.signOut({ scope: "local" }); }
+  finally { window.location.replace("https://app.unite-hq.com/platform"); }
  }
  async function createCourse(event:FormEvent<HTMLFormElement>){
   event.preventDefault();
