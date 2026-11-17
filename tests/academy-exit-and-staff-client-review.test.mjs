@@ -7,7 +7,7 @@ test("Academy sign-out ends local Academy session and returns to UniteHQ, not Ac
  const school=read("components/school-client.tsx");
  const studio=read("components/admin/admin-studio.tsx");
  for(const source of [school,studio]){
-   assert.match(source,/auth\.signOut\(\)/);
+   assert.match(source,/auth\.signOut\(\{ scope: "local" \}\)/);
    assert.match(source,/window\.location\.replace\("https:\/\/app\.unite-hq\.com\/platform"\)/);
    assert.doesNotMatch(source,/window\.location\.replace\("\/"\)/);
  }
