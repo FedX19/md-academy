@@ -363,8 +363,8 @@ export function SchoolClient({ previewCourseId, previewLessonId, previewOpenCour
   }
 
   async function signOut() {
-    await browserAcademyClient()?.auth.signOut();
-    window.location.replace("https://app.unite-hq.com/platform");
+    try { await browserAcademyClient()?.auth.signOut({ scope: "local" }); }
+    finally { window.location.replace("https://app.unite-hq.com/platform"); }
   }
 
   const visible = isPreview ? courses : courses.filter(course => course.status === "published" || user?.admin);
