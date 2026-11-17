@@ -23,7 +23,7 @@ type Question = {
  id:string; lesson_id:string; prompt:string; choices:string[];
  correct_index:number; explanation:string; sort_order:number;
 };
-type View = "overview"|"curriculum"|"coaches";
+type View = "overview"|"curriculum"|"client"|"coaches";
 type CourseDraft = {title:string;slug:string;summary:string;audience:Audience};
 type LessonDraft = {title:string;summary:string;body:string;duration:number};
 const emptyCourse:CourseDraft={title:"",slug:"",summary:"",audience:"coach-all"};
@@ -141,6 +141,7 @@ export function AdminStudio(){
   setMobileMenuOpen(false);
   if(target==="overview")exitToOverview();
   else if(target==="coaches")showCoaches();
+  else if(target==="client"){setView("client");setError("");setNotice("");}
   else if(selectedCourse){setView("curriculum");setMobileOutlineOpen(true);}
   else exitToOverview();
   window.scrollTo({top:0,behavior:"smooth"});
@@ -230,7 +231,7 @@ export function AdminStudio(){
  }
  async function signOut(){
   await browserAcademyClient()?.auth.signOut();
-  window.location.replace("/");
+  window.location.replace("https://app.unite-hq.com/platform");
  }
  async function createCourse(event:FormEvent<HTMLFormElement>){
   event.preventDefault();
@@ -400,7 +401,7 @@ export function AdminStudio(){
  if(access==="denied")return <main className="studio-gate">
   <LockKeyhole size={38}/><h1>Administrator access required</h1>
   <p>{error||"This workspace is reserved for assigned MD Academy administrators and course editors."}</p>
-  <div className="studio-gate-actions"><Link href="/school">Return to learner classroom</Link><Link href="/auth/start">Sign in through UniteHQ</Link></div>
+  <div className="studio-gate-actions"><a href="https://app.unite-hq.com/platform">Back to UniteHQ</a><Link href="/school">Return to learner classroom</Link><Link href="/auth/start">Sign in through UniteHQ</Link></div>
  </main>;
 
  return <div className="studio-app">
@@ -410,10 +411,12 @@ export function AdminStudio(){
    <nav aria-label="Admin navigation">
     <button className={view==="overview"?"active":""} type="button" onClick={exitToOverview}><LayoutDashboard size={18}/> Overview</button>
     <button className={view==="curriculum"?"active":""} type="button" onClick={()=>{if(selectedCourse){setView("curriculum");}else exitToOverview();}}><BookOpen size={18}/> Curriculum Builder</button>
+     <button className={view==="client"?"active":""} type="button" onClick={()=>{setView("client");setError("");setNotice("");}}><GraduationCap size={18}/> View as Client</button>
     {viewer?.publisher?<button className={view==="coaches"?"active":""} type="button" onClick={showCoaches}><Users size={18}/> Member Assignments</button>:null}
    </nav>
    <div className="studio-divider"/>
    <Link className="studio-classroom-link" href="/school"><GraduationCap size={18}/> View Learner Classroom <ArrowRight size={15}/></Link>
+   <a className="studio-classroom-link" href="https://app.unite-hq.com/platform"><ArrowLeft size={18}/> Back to UniteHQ <ArrowRight size={15}/></a>
    <div className="studio-sidebar-foot">
     <ShieldCheck size={17}/><span><strong>Private admin workspace</strong><small>Courses stay hidden until you publish</small></span>
    </div>
@@ -426,7 +429,8 @@ export function AdminStudio(){
       onClick={event=>{if(view!=="overview"){event.preventDefault();exitToOverview();window.scrollTo({top:0,behavior:"smooth"});}}}>
       <Image src="/brand/md-academy-app-icon.svg" alt="MD Academy" width={56} height={56} priority/>
     </Link>
-    <div className="studio-topbar-actions"><span className="studio-user-role">{viewer?.publisher?"Administrator":"Course Editor"}</span><button type="button" onClick={()=>void signOut()}>Sign out</button></div>
+    <div className="studio-topbar-actions"><a className="studio-return-link" href="https://app.unite-hq.com/platform"><ArrowLeft size={16}/> Back to UniteHQ</a><span className="studio-user-role">{viewer?.publisher?"Administrator":"MDC Staff Coach / Editor"}</span><button type="button" onClick={()=>void signOut()}>Sign out</button></div>
+    <a className="studio-mobile-return" href="https://app.unite-hq.com/platform"><ArrowLeft size={16}/> UniteHQ</a>
     <button type="button" className="studio-mobile-menu-toggle" ref={mobileMenuButton}
       aria-label={mobileMenuOpen?"Close Admin Studio menu":"Open Admin Studio menu"}
       aria-expanded={mobileMenuOpen} aria-controls="studio-mobile-menu"
@@ -444,12 +448,18 @@ export function AdminStudio(){
         <button type="button" className={view==="curriculum"?"active":""} onClick={()=>navigateMobile("curriculum")}>
           <BookOpen size={18}/> Curriculum Builder <ArrowRight size={15} className="studio-menu-arrow"/>
         </button>
+        <button type="button" className={view==="client"?"active":""} onClick={()=>navigateMobile("client")}>
+          <GraduationCap size={18}/> View as Client <ArrowRight size={15} className="studio-menu-arrow"/>
+        </button>
         {viewer?.publisher ? <button type="button" className={view==="coaches"?"active":""} onClick={()=>navigateMobile("coaches")}>
           <Users size={18}/> Member Assignments <ArrowRight size={15} className="studio-menu-arrow"/>
         </button> : null}
         <Link href="/school" onClick={()=>setMobileMenuOpen(false)}>
           <GraduationCap size={18}/> View Learner Classroom <ArrowRight size={15} className="studio-menu-arrow"/>
         </Link>
+        <a href="https://app.unite-hq.com/platform" onClick={()=>setMobileMenuOpen(false)}>
+          <ArrowLeft size={18}/> Back to UniteHQ <ArrowRight size={15} className="studio-menu-arrow"/>
+        </a>
         <button type="button" className="studio-mobile-signout" onClick={()=>{setMobileMenuOpen(false);void signOut();}}>
           <LogOut size={18}/> Sign Out
         </button>
@@ -496,12 +506,20 @@ export function AdminStudio(){
         <ChevronRight size={21}/></button>)}</div>}
     </>:null}
 
+    {view==="client"?<>
+      <div className="studio-page-heading"><div><div className="studio-eyebrow">STAFF-ONLY CLASSROOM REVIEW</div><h1>View as <em>Client.</em></h1><p>Review each course through the learner experience. This mode does not write member progress or issue certificates.</p></div></div>
+      <div className="studio-course-cards">{courses.map(course=><Link key={course.id} className="studio-course-card" href={"/admin/preview?courseId="+encodeURIComponent(course.id)+"&open=course"}>
+        <div className="studio-course-symbol"><GraduationCap size={26}/></div>
+        <div className="studio-course-info"><div className="studio-course-topline"><strong>{course.title}</strong><span className={"studio-status "+course.status}>{statusName(course.status)}</span></div><p>{audienceNames[course.audience]} · {countLessons(course)} lessons</p><span className="studio-muted">Open private client view</span></div><ArrowRight size={19}/>
+      </Link>)}</div>
+    </>:null}
+
     {view==="curriculum"&&selectedCourse?<>
      <button type="button" className="studio-back" onClick={exitToOverview}><ArrowLeft size={16}/> All courses</button>
      <div className="studio-page-heading studio-course-heading"><div><div className="studio-eyebrow">CURRICULUM BUILDER <span className={"studio-status "+selectedCourse.status}>{statusName(selectedCourse.status)}</span></div>
       <h1>{selectedCourse.title}</h1><p>{countLessons(selectedCourse)} lessons across {selectedCourse.academy_modules?.length??0} modules · {audienceNames[selectedCourse.audience]}</p></div>
       <Link className="studio-secondary" href={"/admin/preview?courseId="+encodeURIComponent(selectedCourse.id)} target="_blank" rel="noopener noreferrer">
-       <GraduationCap size={17}/> Review Learner View <ArrowRight size={16}/>
+       <GraduationCap size={17}/> View as Client <ArrowRight size={16}/>
       </Link>
       {selectedCourse.status==="published"&&viewer?.publisher?<button className="studio-secondary" type="button" onClick={showCoaches}><Users size={17}/> Assign Coaches</button>:null}
      </div>
