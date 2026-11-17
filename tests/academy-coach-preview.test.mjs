@@ -7,7 +7,7 @@ test("administrator can preview a draft in the real coach classroom without publ
  const admin = read("components/admin/admin-studio.tsx");
  const page = read("app/admin/preview/page.tsx");
  const school = read("components/school-client.tsx");
- assert.match(admin, /Review Learner View/);
+ assert.match(admin, /View as Client/);
  assert.match(admin, /\/admin\/preview\?courseId=/);
  assert.match(page, /SchoolClient previewCourseId=/);
  assert.doesNotMatch(school, /PREVIEW AS LEAGUE COACH/);
