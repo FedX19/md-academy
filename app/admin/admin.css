@@ -150,3 +150,12 @@
   .studio-topbar > .academy-studio-header-icon { display:none; }
   .studio-topbar .studio-mobile-brand img { width:48px; height:48px; max-width:48px; object-fit:contain; }
 }
+
+/* Return to UniteHQ is always available, independently of Academy sign-in. */
+.studio-return-link{display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:8px 12px;border:1px solid #45464d;border-radius:9px;color:#f2a176;text-decoration:none;font-size:12px;font-weight:800;white-space:nowrap}
+.studio-return-link:hover,.studio-return-link:focus-visible{background:#28211e;border-color:#f66921;color:#fff}
+.studio-mobile-return{display:none}
+@media(max-width:850px){
+ .studio-topbar .studio-mobile-return{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:44px;padding:7px 9px;border:1px solid #45464d;border-radius:9px;color:#ffa36e;text-decoration:none;font-size:11px;font-weight:800}
+ .studio-topbar .studio-mobile-return:focus-visible{outline:2px solid #f66921;outline-offset:2px}
+}
