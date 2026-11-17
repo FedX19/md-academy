@@ -30,6 +30,7 @@ export function EntranceScreen({ configured }: EntranceScreenProps) {
           </p>
         )}
       </div>
+      <a className="academy-return-link" href="https://app.unite-hq.com/platform" aria-label="Back to UniteHQ platform">Back to UniteHQ</a>
       <a className="academy-entry-footer" href="https://unite-hq.com" target="_blank" rel="noopener noreferrer" aria-label="Powered by UniteHQ">
         <span>Powered by</span>
         <Image src="/brand/unitehq-logo.svg" width={130} height={46} alt="UniteHQ" unoptimized />
