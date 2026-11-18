@@ -26,6 +26,9 @@ test("individual members may enter the learner classroom without getting Studio 
  assert.match(user, /\.eq\("plan","mdc_individual"\)/);
  assert.match(user, /\.eq\("status","active"\)/);
  assert.match(user, /if\(!user\.admin&&!isIndividualMember/);
+ assert.match(user, /hasVerifiedMdcCoachAppAccess/);
+ assert.match(user, /coachApps/);
+ assert.match(user, /https:\/\/app\.unite-hq\.com\/api\/me\/entitlements/);
  assert.match(staff, /academy_can_author/);
  assert.match(staff, /academy_can_publish/);
  assert.match(staff, /publisher:.*|const publisher/);
