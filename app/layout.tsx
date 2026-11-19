@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "MD Academy | Modern Day Coach",
-  description: "Modern player development education for MDC coaches and parents.",
+  description: "First-principles player development education for authorized MDC coaches and parents.",
   robots: { index: false, follow: false },
   manifest: "/manifest.webmanifest",
   applicationName: "MD Academy",

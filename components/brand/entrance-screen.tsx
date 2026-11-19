@@ -19,7 +19,7 @@ export function EntranceScreen({ configured }: EntranceScreenProps) {
           />
         </div>
         <h1 className="academy-entry-sr-only">MD Academy coaching school</h1>
-        <p className="academy-entry-tagline">Develop with purpose.</p>
+        <p className="academy-entry-tagline">From first principles.</p>
         {configured ? (
           <a className="academy-entry-button" href="/api/auth/start">
             Enter MD Academy <ArrowRight aria-hidden="true" />
